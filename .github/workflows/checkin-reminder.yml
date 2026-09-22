@@ -1,17 +1,18 @@
 name: 打卡提醒
 
-on:
-  # GitHub 原生 cron 使用 UTC 时间，仅作兜底（可能延迟数分钟到数十分钟）
-  # 北京时间 08:45 → 00:45 UTC ；北京时间 17:45 → 09:45 UTC
-  schedule:
-    - cron: "45 0 * * *"
-    - cron: "45 9 * * *"
+# 轮询模式：定时器只负责「每隔几分钟叫醒脚本一次」，
+# 真正决定发不发的是脚本对 config.json 里时间窗口的判断。
+# 所以网页（settings.html）改完时间即刻生效，无需改动定时器。
 
-  # 主力触发方式：由 cron-job.org 精确调用（可精确到分钟）
+on:
+  schedule:
+    # 兜底轮询。cron-job.org 配好后这段可删（GitHub cron 延迟不可控）
+    - cron: "*/10 * * * *"
+
   workflow_dispatch:
     inputs:
       type:
-        description: "提醒类型"
+        description: "提醒类型（auto = 由脚本按时间窗口自动判断）"
         required: true
         default: "auto"
         type: choice
@@ -20,11 +21,12 @@ on:
           - in
           - out
       force:
-        description: "忽略工作日 / 迟到保护判断（测试用）"
+        description: "强制发送（忽略时间窗口 + 忽略当日去重）"
         required: false
         default: false
         type: boolean
 
+# 串行化，避免兜底轮询与 cron-job.org 同时触发导致重复推送
 concurrency:
   group: checkin-reminder
   cancel-in-progress: false
@@ -34,11 +36,19 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # 允许提交提醒日志
+      contents: write
 
     steps:
       - name: 检出仓库
         uses: actions/checkout@v5
+
+      - name: 同步最新数据
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash origin ${{ github.ref_name }} || true
+          echo "───── 当前 config.json ─────"
+          cat config.json
 
       - name: 设置 Python
         uses: actions/setup-python@v6
@@ -55,16 +65,15 @@ jobs:
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
           REMINDER_TYPE: ${{ inputs.type || 'auto' }}
+          FORCE_INPUT: ${{ inputs.force }}
         run: |
           ARGS=""
-          if [ "${{ inputs.force }}" = "true" ]; then ARGS="--force"; fi
+          if [ "$FORCE_INPUT" = "true" ]; then ARGS="--force"; fi
           python scripts/send_reminder.py "$REMINDER_TYPE" $ARGS
 
       - name: 提交提醒日志与节假日缓存
         run: |
           if [[ -n $(git status --porcelain data/) ]]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
             git add -A data/
             git commit -m "log: 记录打卡提醒推送 [skip ci]"
             git push

@@ -96,6 +96,14 @@
 
   .empty{color:var(--dim2);font-size:13.5px;padding:26px 0;text-align:center}
 
+  .setup-link{
+    display:inline-flex;align-items:center;gap:7px;flex:none;
+    font-size:13.5px;padding:9px 16px;border-radius:8px;
+    border:1px solid var(--line);background:var(--bg2);color:var(--txt);
+    text-decoration:none;transition:all .18s;
+  }
+  .setup-link:hover{border-color:var(--blue);color:var(--blue);text-decoration:none}
+
   .flow{
     background:var(--bg2);border:1px solid var(--line);border-radius:12px;
     padding:22px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
@@ -113,10 +121,13 @@
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="badge"><span class="dot"></span> GitHub Actions · 运行中</div>
-    <h1>打卡提醒 <span>/ tonia-checkin-reminder</span></h1>
-    <p class="sub">工作日定时推送上下班打卡提醒 · 钉钉 + 飞书双通道 · 自动跳过节假日与调休</p>
+  <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap">
+    <div>
+      <div class="badge"><span class="dot"></span> GitHub Actions · 运行中</div>
+      <h1>打卡提醒 <span>/ tonia-checkin-reminder</span></h1>
+      <p class="sub">工作日定时推送上下班打卡提醒 · 钉钉 + 飞书双通道 · 自动跳过节假日与调休</p>
+    </div>
+    <a class="setup-link" href="settings.html">⚙️ 设置提醒时间</a>
   </header>
 
   <h2>提醒计划</h2>
@@ -166,13 +177,17 @@
   </div>
 
   <h2>运行链路</h2>
-  <div class="flow">cron-job.org ──<b>08:45 / 17:45</b> 精确触发──▶ GitHub Actions
-                                          │
-                                          ├─ 工作日判定  <i>timor.tech 节假日接口（含调休补班）</i>
-                                          ├─ 迟到保护    <i>超过截止 30 分钟的延迟触发直接丢弃</i>
-                                          ├─ 消息组装    <i>天气 + 倒计时 + 出门清单 + 本月进度 + 随机文案</i>
-                                          ├─ 双通道推送  <i>钉钉 Markdown ＋ 飞书交互卡片</i>
-                                          └─ 日志回写    <i>data/reminder_log.json</i></div>
+  <div class="flow">cron-job.org ──<b>每 5 分钟 ping 一次</b>──▶ GitHub Actions
+                                        │
+                                        ├─ 时间窗口判定  <i>命中 [设定时间, 设定时间+容差] 才继续，其余轮次秒退</i>
+                                        ├─ 当日去重      <i>同一类型每天只推一次，轮询不会重复轰炸</i>
+                                        ├─ 工作日判定    <i>timor.tech 节假日接口（含调休补班）</i>
+                                        ├─ 消息组装      <i>天气 + 倒计时 + 出门清单 + 本月进度 + 随机文案</i>
+                                        ├─ 双通道推送    <i>钉钉 Markdown ＋ 飞书交互卡片</i>
+                                        └─ 日志回写      <i>data/reminder_log.json</i>
+
+  <i>※ 定时器只管「叫醒」，发不发由 config.json 里的时间决定 →</i>
+  <i>  所以 settings.html 改完时间即刻生效，无需动定时器。</i></div>
 
   <footer>
     <span>tonia-checkin-reminder · 零服务器 · 零成本</span>

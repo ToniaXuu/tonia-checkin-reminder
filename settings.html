@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提醒设置 · tonia-checkin-reminder</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128;
+    --line:#30363d; --txt:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
+    --blue:#58a6ff; --in:#3b82f6; --out:#f0883e;
+    --ok:#3fb950; --warn:#d29922; --err:#f85149;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;min-height:100vh;
+    background-image:radial-gradient(circle at 15% 0%,rgba(88,166,255,.10),transparent 45%),
+                     radial-gradient(circle at 85% 10%,rgba(240,136,62,.08),transparent 40%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:40px 24px 120px}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+  .back{color:var(--dim);text-decoration:none;font-size:13.5px;transition:color .2s}
+  .back:hover{color:var(--blue)}
+  h1{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:13.5px;margin-bottom:26px}
+
+  .card{
+    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-bottom:16px;
+  }
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
+  .card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .card.in{border-left:3px solid var(--in)}
+  .card.out{border-left:3px solid var(--out)}
+  .hint{font-size:12.5px;color:var(--dim2);margin-top:6px}
+
+  .field{margin-bottom:14px}
+  .field:last-child{margin-bottom:0}
+  label.lbl{display:block;font-size:12.5px;color:var(--dim);margin-bottom:6px;letter-spacing:.02em}
+
+  input[type=text],input[type=password],input[type=time],input[type=number],select{
+    width:100%;background:var(--bg);color:var(--txt);
+    border:1px solid var(--line);border-radius:8px;
+    padding:9px 12px;font-size:14px;font-family:inherit;
+    transition:border-color .2s,box-shadow .2s;
+  }
+  input:focus,select:focus{
+    outline:none;border-color:var(--blue);
+    box-shadow:0 0 0 3px rgba(88,166,255,.14);
+  }
+  input[type=time]{font-variant-numeric:tabular-nums;cursor:pointer}
+  select{cursor:pointer}
+  input:disabled,select:disabled{opacity:.45;cursor:not-allowed}
+
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
+
+  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(48,54,61,.5)}
+  .opt:last-child{border-bottom:none;padding-bottom:0}
+  .opt:first-child{padding-top:0}
+  .opt-text{font-size:13.5px}
+  .opt-desc{font-size:12px;color:var(--dim2);margin-top:2px}
+
+  .switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+  .switch input{opacity:0;width:0;height:0;position:absolute}
+  .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.22s;cursor:pointer}
+  .slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#8b949e;border-radius:50%;transition:.22s}
+  .switch input:checked + .slider{background:rgba(88,166,255,.35)}
+  .switch input:checked + .slider::before{transform:translateX(18px);background:var(--blue)}
+  .switch input:disabled + .slider{opacity:.4;cursor:not-allowed}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    border:1px solid var(--line);background:var(--bg3);color:var(--txt);
+    padding:9px 18px;border-radius:8px;font-size:13.5px;font-family:inherit;
+    cursor:pointer;transition:all .18s;white-space:nowrap;
+  }
+  .btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{background:var(--blue);border-color:var(--blue);color:#06121f;font-weight:600}
+  .btn.primary:hover:not(:disabled){background:#79b8ff;border-color:#79b8ff;color:#06121f}
+  .btn.sm{padding:6px 13px;font-size:12.5px}
+
+  .actionbar{
+    position:fixed;left:0;right:0;bottom:0;
+    background:rgba(13,17,23,.92);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);padding:14px 24px;z-index:20;
+  }
+  .actionbar-inner{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .spacer{flex:1}
+
+  .status{
+    font-size:12.5px;padding:9px 13px;border-radius:8px;margin-bottom:14px;
+    border:1px solid var(--line);color:var(--dim);display:none;
+  }
+  .status.show{display:block}
+  .status.ok{color:var(--ok);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
+  .status.err{color:var(--err);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
+  .status.warn{color:var(--warn);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.08)}
+
+  .warn-box{
+    background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);
+    border-radius:10px;padding:14px 16px;font-size:12.5px;color:#e3b341;
+    line-height:1.75;margin-bottom:16px;
+  }
+  .warn-box b{color:#f0c674}
+  .warn-box code{background:rgba(0,0,0,.3);padding:1.5px 6px;border-radius:4px;font-size:12px;color:#e6edf3}
+
+  .badge{
+    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
+    padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim2);
+  }
+  .badge.on{color:var(--ok);border-color:rgba(63,185,80,.4)}
+  .badge.off{color:var(--dim2)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px}
+  .spin{display:inline-block;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="back" href="index.html">← 返回看板</a>
+    <span class="badge" id="conn-badge"><span class="dot"></span><span id="conn-badge-text">未连接</span></span>
+  </div>
+
+  <h1>打卡提醒设置</h1>
+  <p class="sub">改完点保存，配置会直接提交到 GitHub 仓库，定时任务下一轮立即生效</p>
+
+  <div class="status" id="status"></div>
+
+  <div class="warn-box">
+    <b>关于访问令牌</b><br>
+    保存配置需要向 GitHub 写入文件，必须使用你自己的 Personal Access Token。令牌<b>仅保存在本浏览器本地</b>，不会上传到任何第三方。<br>
+    建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:#e3b341">GitHub → Fine-grained tokens</a> 新建一个，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code> 权限，并设置较短有效期。
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">🔗 仓库连接</div>
+      <button class="btn sm" id="btn-connect">连接并加载</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">GitHub 用户名</label>
+        <input type="text" id="conn-owner" placeholder="ToniaXuu" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="lbl">仓库名</label>
+        <input type="text" id="conn-repo" placeholder="tonia-checkin-reminder" autocomplete="off">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">分支</label>
+        <input type="text" id="conn-branch" value="main" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="lbl">访问令牌（PAT）</label>
+        <input type="password" id="conn-token" placeholder="github_pat_..." autocomplete="off">
+      </div>
+    </div>
+    <div class="hint">只填写一次，浏览器会记住。换设备或清缓存后需要重填。</div>
+  </div>
+
+  <div class="card in">
+    <div class="card-head">
+      <div class="card-title">🌅 上班打卡</div>
+      <label class="switch"><input type="checkbox" id="in-enabled" disabled><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">提醒时间</label>
+        <input type="time" id="in-time" value="08:45" disabled>
+      </div>
+      <div class="field">
+        <label class="lbl">打卡截止</label>
+        <input type="time" id="in-deadline" value="09:00" disabled>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">出门清单（用 · 分隔，留空则不显示）</label>
+      <input type="text" id="chk-in" placeholder="工牌 · 电脑 · 充电器" disabled>
+    </div>
+  </div>
+
+  <div class="card out">
+    <div class="card-head">
+      <div class="card-title">🌆 下班打卡</div>
+      <label class="switch"><input type="checkbox" id="out-enabled" disabled><span class="slider"></span></label>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">提醒时间</label>
+        <input type="time" id="out-time" value="17:45" disabled>
+      </div>
+      <div class="field">
+        <label class="lbl">打卡截止</label>
+        <input type="time" id="out-deadline" value="18:00" disabled>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lbl">下班清单（用 · 分隔，留空则不显示）</label>
+      <input type="text" id="chk-out" placeholder="电脑 · 工牌 · 伞" disabled>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">📍 位置与天气</div>
+    </div>
+    <div class="field">
+      <label class="lbl">城市</label>
+      <select id="city-select" disabled></select>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">纬度</label>
+        <input type="text" id="city-lat" disabled>
+      </div>
+      <div class="field">
+        <label class="lbl">经度</label>
+        <input type="text" id="city-lon" disabled>
+      </div>
+    </div>
+    <div class="hint">选「自定义」时可手动填经纬度，用于非预设城市。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">⚙️ 消息内容与规则</div>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">自动跳过周末与法定节假日</div>
+        <div class="opt-desc">含调休补班识别，节假日当天静默不打扰</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-holidays" disabled><span class="slider"></span></label>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">显示天气</div>
+        <div class="opt-desc">来自 open-meteo，免费无需密钥</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-weather" disabled><span class="slider"></span></label>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">显示打卡倒计时</div>
+        <div class="opt-desc">如「09:00（还有 15 分钟）」</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-countdown" disabled><span class="slider"></span></label>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">显示本月工作日进度</div>
+        <div class="opt-desc">如「本月工作日进度 17/22 天」</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-month" disabled><span class="slider"></span></label>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">随机文案</div>
+        <div class="opt-desc">每次从文案库随机挑一句</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="opt-quote" disabled><span class="slider"></span></label>
+    </div>
+    <div class="opt">
+      <div>
+        <div class="opt-text">时间容差</div>
+        <div class="opt-desc">轮询间隔内允许多少分钟的触发延迟仍算命中</div>
+      </div>
+      <input type="number" id="opt-tolerance" min="1" max="60" value="10"
+             style="width:80px;text-align:center" disabled>
+    </div>
+  </div>
+
+</div>
+
+<div class="actionbar">
+  <div class="actionbar-inner">
+    <button class="btn primary" id="btn-save" disabled>保存到 GitHub</button>
+    <button class="btn" id="btn-test-in" disabled>测试上班提醒</button>
+    <button class="btn" id="btn-test-out" disabled>测试下班提醒</button>
+    <span class="spacer"></span>
+    <span class="hint" id="saved-hint" style="margin:0"></span>
+  </div>
+</div>
+
+<script>
+const CITY_PRESETS = [
+  ["济南", 36.6512, 117.1201], ["北京", 39.9042, 116.4074], ["上海", 31.2304, 121.4737],
+  ["深圳", 22.5431, 114.0579], ["广州", 23.1291, 113.2644], ["杭州", 30.2741, 120.1551],
+  ["南京", 32.0603, 118.7969], ["苏州", 31.2989, 120.5853], ["青岛", 36.0671, 120.3826],
+  ["烟台", 37.4638, 121.4479], ["天津", 39.3434, 117.3616], ["郑州", 34.7466, 113.6254],
+  ["武汉", 30.5928, 114.3055], ["长沙", 28.2282, 112.9388], ["西安", 34.3416, 108.9398],
+  ["成都", 30.5728, 104.0668], ["重庆", 29.5630, 106.5516], ["沈阳", 41.8057, 123.4315]
+];
+
+const STORE_KEY = "tonia-checkin-conn";
+const API = "https://api.github.com";
+
+let remoteSha = null;
+let remoteRaw = null;
+let connected = false;
+const $ = id => document.getElementById(id);
+
+const EDIT_FIELDS = [
+  "in-enabled","in-time","in-deadline","chk-in",
+  "out-enabled","out-time","out-deadline","chk-out",
+  "city-select","city-lat","city-lon",
+  "opt-holidays","opt-weather","opt-countdown","opt-month","opt-quote","opt-tolerance"
+];
+
+function setEnabled(on){
+  EDIT_FIELDS.forEach(id => { $(id).disabled = !on; });
+  $("btn-save").disabled = !on;
+  $("btn-test-in").disabled = !on;
+  $("btn-test-out").disabled = !on;
+}
+
+function status(msg, kind){
+  const el = $("status");
+  el.textContent = msg;
+  el.className = "status show" + (kind ? " " + kind : "");
+}
+
+function setBadge(on){
+  $("conn-badge").className = "badge " + (on ? "on" : "off");
+  $("conn-badge-text").textContent = on ? "已连接" : "未连接";
+}
+
+function b64encode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = "";
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+function b64decode(b64){
+  const bin = atob(b64.replace(/\s/g, ""));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+function conn(){
+  return {
+    owner: $("conn-owner").value.trim(),
+    repo: $("conn-repo").value.trim(),
+    branch: $("conn-branch").value.trim() || "main",
+    token: $("conn-token").value.trim()
+  };
+}
+
+function headers(withAuth){
+  const h = {
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+  const c = conn();
+  if (withAuth && c.token) h["Authorization"] = "Bearer " + c.token;
+  return h;
+}
+
+/* ── 城市下拉 ── */
+function initCities(){
+  const sel = $("city-select");
+  sel.innerHTML = CITY_PRESETS
+    .map(([n, la, lo]) => `<option value="${n}" data-lat="${la}" data-lon="${lo}">${n}</option>`)
+    .join("") + `<option value="__custom">自定义…</option>`;
+  sel.addEventListener("change", () => {
+    const opt = sel.selectedOptions[0];
+    if(sel.value !== "__custom"){
+      $("city-lat").value = opt.dataset.lat;
+      $("city-lon").value = opt.dataset.lon;
+    }
+  });
+}
+
+/* ── 加载配置 ── */
+async function loadConfig(){
+  const c = conn();
+  if(!c.owner || !c.repo){ status("请先填写用户名和仓库名", "err"); return; }
+  if(!c.token){ status("请填写访问令牌", "err"); return; }
+
+  status("正在验证令牌…");
+  try{
+    const u = await fetch(API + "/user", {headers: headers(true)});
+    if(!u.ok) throw new Error(u.status === 401 ? "令牌无效或已过期" : "验证失败 " + u.status);
+    const user = await u.json();
+    status("令牌有效（" + user.login + "），正在读取 config.json…");
+  }catch(e){
+    status("令牌验证失败：" + e.message, "err"); return;
+  }
+
+  try{
+    const url = `${API}/repos/${c.owner}/${c.repo}/contents/config.json?ref=${c.branch}`;
+    const r = await fetch(url, {headers: headers(true)});
+    if(!r.ok) throw new Error(r.status === 404 ? "仓库或 config.json 不存在" : "读取失败 " + r.status);
+    const data = await r.json();
+    remoteSha = data.sha;
+    remoteRaw = JSON.parse(b64decode(data.content));
+  }catch(e){
+    status("读取配置失败：" + e.message, "err"); return;
+  }
+
+  fillForm(remoteRaw);
+  connected = true;
+  setEnabled(true);
+  setBadge(true);
+  localStorage.setItem(STORE_KEY, JSON.stringify(conn()));
+  status("已连接，可以编辑并保存了 ✓", "ok");
+}
+
+/* ── 回填表单 ── */
+function fillForm(cfg){
+  const s = cfg.schedule || {};
+  const o = cfg.options || {};
+  const city = cfg.city || {};
+
+  $("in-enabled").checked   = (s["in"]  || {}).enabled !== false;
+  $("in-time").value        = (s["in"]  || {}).time || "08:45";
+  $("in-deadline").value    = (s["in"]  || {}).deadline || "09:00";
+  $("out-enabled").checked  = (s["out"] || {}).enabled !== false;
+  $("out-time").value       = (s["out"] || {}).time || "17:45";
+  $("out-deadline").value   = (s["out"] || {}).deadline || "18:00";
+
+  $("chk-in").value  = (o.checklist_in  || []).join(" · ");
+  $("chk-out").value = (o.checklist_out || []).join(" · ");
+
+  $("opt-holidays").checked  = o.skip_holidays !== false;
+  $("opt-weather").checked   = o.include_weather !== false;
+  $("opt-countdown").checked = o.include_countdown !== false;
+  $("opt-month").checked     = o.include_month_stats !== false;
+  $("opt-quote").checked     = o.include_quote !== false;
+  $("opt-tolerance").value   = o.tolerance_minutes || 10;
+
+  const sel = $("city-select");
+  const known = CITY_PRESETS.some(([n]) => n === city.name);
+  if(known){
+    sel.value = city.name;
+    $("city-lat").value = city.lat;
+    $("city-lon").value = city.lon;
+  }else{
+    sel.value = "__custom";
+    $("city-lat").value = city.lat || "";
+    $("city-lon").value = city.lon || "";
+  }
+}
+
+/* ── 从表单构建 config ── */
+function buildConfig(){
+  const base = remoteRaw ? JSON.parse(JSON.stringify(remoteRaw)) : {};
+  const sel = $("city-select");
+  const manual = sel.value === "__custom";
+
+  const prevName = (base.city && base.city.name) || "";
+  base.city = {
+    name: manual ? (prevName || "自定义") : sel.value,
+    lat: parseFloat($("city-lat").value),
+    lon: parseFloat($("city-lon").value),
+    timezone: "Asia/Shanghai"
+  };
+  if(manual){
+    const nm = prompt("给这个地点起个名字（会显示在提醒消息里）：", prevName === "自定义" ? "" : prevName);
+    if(nm && nm.trim()) base.city.name = nm.trim();
+  }
+  if(isNaN(base.city.lat) || isNaN(base.city.lon)){
+    throw new Error("经纬度必须是数字");
+  }
+
+  base.schedule = base.schedule || {};
+  base.schedule["in"] = Object.assign({}, base.schedule["in"], {
+    enabled: $("in-enabled").checked,
+    time: $("in-time").value,
+    deadline: $("in-deadline").value,
+    label: "上班打卡",
+    emoji: "🌅"
+  });
+  base.schedule["out"] = Object.assign({}, base.schedule["out"], {
+    enabled: $("out-enabled").checked,
+    time: $("out-time").value,
+    deadline: $("out-deadline").value,
+    label: "下班打卡",
+    emoji: "🌆"
+  });
+
+  const split = s => s.split("·").map(x => x.trim()).filter(Boolean);
+  base.options = Object.assign({}, base.options, {
+    skip_holidays: $("opt-holidays").checked,
+    include_weather: $("opt-weather").checked,
+    include_countdown: $("opt-countdown").checked,
+    include_month_stats: $("opt-month").checked,
+    include_quote: $("opt-quote").checked,
+    tolerance_minutes: parseInt($("opt-tolerance").value, 10) || 10,
+    checklist_in: split($("chk-in").value),
+    checklist_out: split($("chk-out").value)
+  });
+
+  delete base.options.max_late_minutes;
+  return base;
+}
+
+/* ── 保存 ── */
+async function save(){
+  let cfg;
+  try{ cfg = buildConfig(); }
+  catch(e){ status(e.message, "err"); return; }
+
+  const c = conn();
+  $("btn-save").disabled = true;
+  status("正在提交到 GitHub…");
+
+  try{
+    const url = `${API}/repos/${c.owner}/${c.repo}/contents/config.json`;
+    const r = await fetch(url, {
+      method: "PUT",
+      headers: Object.assign({"Content-Type": "application/json"}, headers(true)),
+      body: JSON.stringify({
+        message: "config: 更新打卡提醒设置（网页端）",
+        content: b64encode(JSON.stringify(cfg, null, 2) + "\n"),
+        sha: remoteSha,
+        branch: c.branch
+      })
+    });
+
+    if(!r.ok){
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || ("提交失败 " + r.status));
+    }
+
+    const res = await r.json();
+    remoteSha = res.content.sha;
+    remoteRaw = cfg;
+
+    const t = new Date().toLocaleTimeString("zh-CN", {hour12: false});
+    $("saved-hint").textContent = "已保存 " + t;
+    status("✅ 已提交到 GitHub。定时任务下一轮（≤10 分钟）就会用新配置。", "ok");
+  }catch(e){
+    status("保存失败：" + e.message, "err");
+  }finally{
+    $("btn-save").disabled = false;
+  }
+}
+
+/* ── 手动测试 ── */
+async function testRemind(type){
+  const c = conn();
+  status("正在触发 " + (type === "in" ? "上班" : "下班") + "提醒测试…");
+  try{
+    const url = `${API}/repos/${c.owner}/${c.repo}/actions/workflows/checkin-reminder.yml/dispatches`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: Object.assign({"Content-Type": "application/json"}, headers(true)),
+      body: JSON.stringify({ref: c.branch, inputs: {type: type, force: true}})
+    });
+    if(r.status === 204){
+      status("✅ 已触发，约 20~60 秒后消息会到钉钉和飞书。可到 Actions 页看日志。", "ok");
+    }else{
+      const err = await r.json().catch(() => ({}));
+      throw new Error(err.message || ("触发失败 " + r.status));
+    }
+  }catch(e){
+    status("触发失败：" + e.message, "err");
+  }
+}
+
+/* ── 启动 ── */
+initCities();
+setEnabled(false);
+
+const saved = localStorage.getItem(STORE_KEY);
+if(saved){
+  try{
+    const s = JSON.parse(saved);
+    $("conn-owner").value  = s.owner || "";
+    $("conn-repo").value   = s.repo || "tonia-checkin-reminder";
+    $("conn-branch").value = s.branch || "main";
+    $("conn-token").value  = s.token || "";
+    loadConfig();
+  }catch(e){}
+}else{
+  status("填写仓库信息后点「连接并加载」。", "warn");
+}
+
+$("btn-connect").addEventListener("click", loadConfig);
+$("btn-save").addEventListener("click", save);
+$("btn-test-in").addEventListener("click", () => testRemind("in"));
+$("btn-test-out").addEventListener("click", () => testRemind("out"));
+</script>
+</body>
+</html>

@@ -321,10 +321,51 @@ def append_log(rtype, channels):
 
 # ────────────────────────── 主流程 ──────────────────────────
 
-def resolve_type(arg, now):
+def resolve_type(arg, cfg, now, tolerance, force=False):
+    """
+    决定本次该发哪种提醒。
+
+    返回 (rtype, reason)，rtype = 'in' | 'out' | None
+    None 表示当前不在任何提醒时间窗口内 —— 这是「轮询模式」的核心：
+    定时器每 N 分钟 ping 一次，只有落在 [设定时间, 设定时间+容差] 内才真正发送，
+    因此网页上改时间即可立即生效，无需改动定时器。
+    """
     if arg in ("in", "out"):
-        return arg
-    return "in" if now.hour < 12 else "out"
+        return arg, "手动指定类型"
+
+    hits, passed = [], []
+    for k in ("in", "out"):
+        sc = (cfg.get("schedule") or {}).get(k) or {}
+        if not sc.get("enabled", True):
+            continue
+        th, tm = parse_hhmm(sc["time"])
+        target = now.replace(hour=th, minute=tm, second=0, microsecond=0)
+        delta = (now - target).total_seconds() / 60
+        if 0 <= delta <= tolerance:
+            hits.append((delta, k))
+        elif delta > 0:
+            passed.append((delta, k))
+
+    if hits:
+        hits.sort()
+        delta, k = hits[0]
+        return k, f"命中 {k} 时间窗口（距设定时间 {int(round(delta))} 分钟）"
+
+    if force and passed:
+        passed.sort()
+        delta, k = passed[0]
+        return k, f"--force 强制补发（已过设定时间 {int(round(delta))} 分钟）"
+
+    return None, f"当前不在提醒窗口内（容差 {tolerance} 分钟）"
+
+
+def sent_today(rtype, day):
+    """查询当天是否已推送过该类型提醒，用于轮询模式去重。返回 ts 或 None。"""
+    log = load_json(LOG_FILE, {"history": []}) or {}
+    for h in log.get("history", []):
+        if h.get("date") == day and h.get("type") == rtype:
+            return h.get("ts", "")
+    return None
 
 
 def main():
@@ -336,31 +377,37 @@ def main():
 
     cfg = load_json(CONFIG_FILE) or {}
     now = now_cn()
-    rtype = resolve_type(args.type, now)
-    sc = (cfg.get("schedule") or {}).get(rtype) or {}
+    opts = cfg.get("options", {}) or {}
+    tolerance = int(opts.get("tolerance_minutes", 10))
+    today_str = now.strftime("%Y-%m-%d")
 
     print(f"🕐 当前时间：{now.strftime('%Y-%m-%d %H:%M:%S')} (UTC+8)")
-    print(f"📌 提醒类型：{'上班' if rtype == 'in' else '下班'} ({rtype})")
 
-    if not sc.get("enabled", True):
+    # 1) 时间窗口判定 —— 轮询模式下决定「这次要不要发」
+    rtype, reason = resolve_type(args.type, cfg, now, tolerance, force=args.force)
+    if rtype is None:
+        print(f"⏭️ {reason}，跳过")
+        return 0
+
+    sc = (cfg.get("schedule") or {}).get(rtype) or {}
+    print(f"📌 提醒类型：{sc.get('label', rtype)} ({rtype}) — {reason}")
+
+    if not sc.get("enabled", True) and not args.force:
         print("⏭️ 该提醒已在 config.json 中关闭，跳过")
         return 0
 
-    # 工作日判断
-    opts = cfg.get("options", {})
+    # 2) 当日去重 —— 轮询会多次命中窗口，同类型每天只发一次
+    prev = sent_today(rtype, today_str)
+    if prev and not args.force:
+        print(f"✅ 今天已推送过该提醒（{prev}），跳过")
+        return 0
+
+    # 3) 工作日判定
     work, work_desc, src = get_workday_info(now, opts.get("skip_holidays", True))
     print(f"📅 工作日判定：{'是' if work else '否'} — {work_desc}（来源：{src}）")
 
     if not work and not args.force:
         print("🎉 今天不用上班，静默跳过（加 --force 可强制发送）")
-        return 0
-
-    # 迟到保护：避免定时器延迟导致「迟到的提醒」
-    max_late = int(opts.get("max_late_minutes", 30))
-    dl_h, dl_m = parse_hhmm(sc["deadline"])
-    late_min = (now - now.replace(hour=dl_h, minute=dl_m, second=0, microsecond=0)).total_seconds() / 60
-    if args.type == "auto" and late_min > max_late:
-        print(f"⏰ 已超出打卡截止 {int(late_min)} 分钟（阈值 {max_late} 分钟），判定为迟到触发，跳过")
         return 0
 
     # 组装消息
