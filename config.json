@@ -72,6 +72,17 @@
       "label": "下班打卡",
       "emoji": "🚨",
       "message": "六点了，Bro不会还没打卡吧，工资还想要吗"
+    },
+    {
+      "id": "rm-ert2h40",
+      "enabled": true,
+      "channels": [
+        "dingtalk"
+      ],
+      "time": "18:20",
+      "label": "下班打卡",
+      "emoji": "🔔",
+      "message": "啥波一，是不是已经在下班路上了"
     }
   ],
   "channels": {
