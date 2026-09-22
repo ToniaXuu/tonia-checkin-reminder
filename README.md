@@ -119,6 +119,8 @@ GitHub Actions
 
 ### 3. cron-job.org
 
+> 需要逐步操作 + 错误对照表？见 [`docs/cron-job-setup.md`](docs/cron-job-setup.md)。
+
 注册 https://cron-job.org （免费）→ 新建任务：
 
 - **URL**：`https://api.github.com/repos/<用户名>/tonia-checkin-reminder/actions/workflows/checkin-reminder.yml/dispatches`
