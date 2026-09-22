@@ -175,7 +175,7 @@ python scripts/send_reminder.py
 # 看某条提醒的消息长什么样（不发送）
 python scripts/send_reminder.py --id dt-1705 --dry-run
 
-# 真的发一条（忽略窗口与去重）
+# 真的发一条（忽略窗口与去重；--force 不写去重日志，不影响当天正常调度）
 python scripts/send_reminder.py --id dt-1705 --force
 
 # 不带 --id 时需先设置环境变量才会真正发送

@@ -458,8 +458,13 @@ def main():
 
         sent = dispatch(cfg, rem, ctx, dry=args.dry_run)
         if sent:
-            append_log(rem, sent)
-            print(f"     📝 已记录日志：{', '.join(sent)}")
+            # --force 属于「临时强制发送」，不写入去重日志，
+            # 否则测试一次就会把当天真正该发的那一轮拦掉。
+            if args.force:
+                print("     📝 --force 模式：不写入去重日志（不影响当日正常调度）")
+            else:
+                append_log(rem, sent)
+                print(f"     📝 已记录日志：{', '.join(sent)}")
             ok_count += 1
 
     print(f"\n完成：本次成功推送 {ok_count} 条")
