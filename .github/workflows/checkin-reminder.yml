@@ -1,0 +1,74 @@
+name: 打卡提醒
+
+on:
+  # GitHub 原生 cron 使用 UTC 时间，仅作兜底（可能延迟数分钟到数十分钟）
+  # 北京时间 08:45 → 00:45 UTC ；北京时间 17:45 → 09:45 UTC
+  schedule:
+    - cron: "45 0 * * *"
+    - cron: "45 9 * * *"
+
+  # 主力触发方式：由 cron-job.org 精确调用（可精确到分钟）
+  workflow_dispatch:
+    inputs:
+      type:
+        description: "提醒类型"
+        required: true
+        default: "auto"
+        type: choice
+        options:
+          - auto
+          - in
+          - out
+      force:
+        description: "忽略工作日 / 迟到保护判断（测试用）"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: checkin-reminder
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write  # 允许提交提醒日志
+
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v5
+
+      - name: 设置 Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: 安装依赖
+        run: pip install requests
+
+      - name: 发送打卡提醒
+        env:
+          DINGTALK_WEBHOOK: ${{ secrets.DINGTALK_WEBHOOK }}
+          DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+          FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
+          REMINDER_TYPE: ${{ inputs.type || 'auto' }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="--force"; fi
+          python scripts/send_reminder.py "$REMINDER_TYPE" $ARGS
+
+      - name: 提交提醒日志与节假日缓存
+        run: |
+          if [[ -n $(git status --porcelain data/) ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A data/
+            git commit -m "log: 记录打卡提醒推送 [skip ci]"
+            git push
+            echo "✅ 数据已提交"
+          else
+            echo "⏭️ 数据无变化"
+          fi

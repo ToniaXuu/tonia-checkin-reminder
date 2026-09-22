@@ -1,0 +1,53 @@
+{
+  "_comment": "tonia-checkin-reminder 配置 —— 改完直接 push，无需改代码",
+
+  "city": {
+    "name": "济南",
+    "lat": 36.6512,
+    "lon": 117.1201,
+    "timezone": "Asia/Shanghai"
+  },
+
+  "schedule": {
+    "in": {
+      "enabled": true,
+      "time": "08:45",
+      "deadline": "09:00",
+      "label": "上班打卡",
+      "emoji": "🌅",
+      "workdays_only": true
+    },
+    "out": {
+      "enabled": true,
+      "time": "17:45",
+      "deadline": "18:00",
+      "label": "下班打卡",
+      "emoji": "🌆",
+      "workdays_only": true
+    }
+  },
+
+  "channels": {
+    "dingtalk": {
+      "enabled": true,
+      "webhook_env": "DINGTALK_WEBHOOK",
+      "secret_env": "DINGTALK_SECRET"
+    },
+    "feishu": {
+      "enabled": true,
+      "webhook_env": "FEISHU_WEBHOOK",
+      "secret_env": "FEISHU_SECRET"
+    }
+  },
+
+  "options": {
+    "skip_holidays": true,
+    "include_weather": true,
+    "include_countdown": true,
+    "include_month_stats": true,
+    "include_quote": true,
+    "max_late_minutes": 30,
+    "checklist_in": ["工牌", "电脑", "充电器"],
+    "checklist_out": ["电脑", "工牌", "伞"]
+  }
+}

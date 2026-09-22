@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>打卡提醒 · tonia-checkin-reminder</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128;
+    --line:#30363d; --txt:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
+    --blue:#58a6ff; --in:#3b82f6; --out:#f0883e;
+    --ok:#3fb950; --warn:#d29922; --off:#484f58;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6; min-height:100vh;
+    background-image:radial-gradient(circle at 15% 0%,rgba(88,166,255,.10),transparent 45%),
+                     radial-gradient(circle at 85% 10%,rgba(240,136,62,.08),transparent 40%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:56px 24px 80px}
+
+  header{margin-bottom:40px}
+  .badge{
+    display:inline-flex;align-items:center;gap:7px;
+    font-size:12px;letter-spacing:.04em;color:var(--blue);
+    border:1px solid rgba(88,166,255,.35);background:rgba(88,166,255,.08);
+    padding:4px 11px;border-radius:999px;margin-bottom:16px;
+  }
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
+  h1{font-size:30px;font-weight:650;letter-spacing:-.02em;margin-bottom:8px}
+  h1 span{color:var(--dim2);font-weight:400}
+  .sub{color:var(--dim);font-size:14px}
+
+  h2{
+    font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim2);margin:38px 0 16px;
+  }
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+    padding:22px;position:relative;overflow:hidden;
+    transition:border-color .2s,transform .2s;
+  }
+  .card:hover{transform:translateY(-2px)}
+  .card::before{content:'';position:absolute;inset:0 auto 0 0;width:3px}
+  .card.in::before{background:linear-gradient(180deg,var(--in),transparent)}
+  .card.out::before{background:linear-gradient(180deg,var(--out),transparent)}
+  .card.in:hover{border-color:rgba(59,130,246,.5)}
+  .card.out:hover{border-color:rgba(240,136,62,.5)}
+
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
+  .card-title{font-size:16px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .pill{
+    font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500;
+    border:1px solid var(--line);color:var(--dim);
+  }
+  .pill.on{color:var(--ok);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.1)}
+  .pill.off{color:var(--off)}
+
+  .big-time{font-size:34px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .card.in .big-time{color:var(--in)}
+  .card.out .big-time{color:var(--out)}
+  .meta{font-size:13px;color:var(--dim);margin-top:4px}
+  .meta b{color:var(--txt);font-weight:500}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media(max-width:720px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .stat-label{font-size:12px;color:var(--dim2);letter-spacing:.05em;margin-bottom:8px}
+  .stat-val{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums}
+  .stat-val small{font-size:14px;color:var(--dim);font-weight:400;margin-left:4px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{
+    text-align:left;color:var(--dim2);font-weight:500;font-size:12px;
+    letter-spacing:.06em;text-transform:uppercase;
+    padding:0 14px 10px;border-bottom:1px solid var(--line);
+  }
+  tbody td{padding:11px 14px;border-bottom:1px solid rgba(48,54,61,.55)}
+  tbody tr:hover{background:rgba(88,166,255,.045)}
+  tbody tr:last-child td{border-bottom:none}
+  .tag{
+    display:inline-block;font-size:12px;padding:2px 9px;border-radius:6px;
+    font-weight:500;
+  }
+  .tag.in{color:var(--in);background:rgba(59,130,246,.14)}
+  .tag.out{color:var(--out);background:rgba(240,136,62,.14)}
+  .ch{color:var(--dim);font-size:12.5px}
+  .mono{font-variant-numeric:tabular-nums;color:var(--dim)}
+
+  .empty{color:var(--dim2);font-size:13.5px;padding:26px 0;text-align:center}
+
+  .flow{
+    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
+    padding:22px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-size:12.5px;line-height:1.95;color:var(--dim);overflow-x:auto;white-space:pre;
+  }
+  .flow b{color:var(--blue);font-weight:500}
+  .flow i{color:var(--ok);font-style:normal}
+
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
+    color:var(--dim2);font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge"><span class="dot"></span> GitHub Actions · 运行中</div>
+    <h1>打卡提醒 <span>/ tonia-checkin-reminder</span></h1>
+    <p class="sub">工作日定时推送上下班打卡提醒 · 钉钉 + 飞书双通道 · 自动跳过节假日与调休</p>
+  </header>
+
+  <h2>提醒计划</h2>
+  <div class="grid">
+    <div class="card in">
+      <div class="card-top">
+        <div class="card-title">🌅 上班打卡</div>
+        <span class="pill" id="pill-in">—</span>
+      </div>
+      <div class="big-time" id="time-in">--:--</div>
+      <div class="meta">打卡截止 <b id="dl-in">--:--</b> · 提前 <b id="adv-in">--</b> 分钟提醒</div>
+    </div>
+    <div class="card out">
+      <div class="card-top">
+        <div class="card-title">🌆 下班打卡</div>
+        <span class="pill" id="pill-out">—</span>
+      </div>
+      <div class="big-time" id="time-out">--:--</div>
+      <div class="meta">打卡截止 <b id="dl-out">--:--</b> · 提前 <b id="adv-out">--</b> 分钟提醒</div>
+    </div>
+  </div>
+
+  <h2>本月概览</h2>
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">本月已推送</div>
+      <div class="stat-val" id="s-count">0<small>次</small></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">覆盖天数</div>
+      <div class="stat-val" id="s-days">0<small>天</small></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">持续运行</div>
+      <div class="stat-val" id="s-span">—</div>
+    </div>
+  </div>
+
+  <h2>推送记录</h2>
+  <div id="log-box">
+    <table>
+      <thead>
+        <tr><th>日期</th><th>类型</th><th>时间</th><th>通道</th></tr>
+      </thead>
+      <tbody id="log-body"></tbody>
+    </table>
+  </div>
+
+  <h2>运行链路</h2>
+  <div class="flow">cron-job.org ──<b>08:45 / 17:45</b> 精确触发──▶ GitHub Actions
+                                          │
+                                          ├─ 工作日判定  <i>timor.tech 节假日接口（含调休补班）</i>
+                                          ├─ 迟到保护    <i>超过截止 30 分钟的延迟触发直接丢弃</i>
+                                          ├─ 消息组装    <i>天气 + 倒计时 + 出门清单 + 本月进度 + 随机文案</i>
+                                          ├─ 双通道推送  <i>钉钉 Markdown ＋ 飞书交互卡片</i>
+                                          └─ 日志回写    <i>data/reminder_log.json</i></div>
+
+  <footer>
+    <span>tonia-checkin-reminder · 零服务器 · 零成本</span>
+    <span id="load-hint">正在加载数据…</span>
+  </footer>
+
+</div>
+
+<script>
+const FALLBACK_CFG = {
+  city:{name:"济南"},
+  schedule:{
+    in :{enabled:true,time:"08:45",deadline:"09:00",label:"上班打卡"},
+    out:{enabled:true,time:"17:45",deadline:"18:00",label:"下班打卡"}
+  }
+};
+
+function mins(t){
+  const [h,m]=t.split(":").map(Number);
+  return h*60+m;
+}
+
+async function loadJSON(path){
+  try{
+    const r = await fetch(path + "?t=" + Date.now(), {cache:"no-store"});
+    if(!r.ok) throw new Error(r.status);
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+function renderPlan(cfg){
+  const s = cfg.schedule || FALLBACK_CFG.schedule;
+  ["in","out"].forEach(k=>{
+    const c = s[k];
+    if(!c) return;
+    document.getElementById("time-"+k).textContent = c.time;
+    document.getElementById("dl-"+k).textContent   = c.deadline;
+    const adv = mins(c.deadline) - mins(c.time);
+    document.getElementById("adv-"+k).textContent  = adv > 0 ? adv : 0;
+    const pill = document.getElementById("pill-"+k);
+    pill.textContent = c.enabled === false ? "已关闭" : "已启用";
+    pill.className   = "pill " + (c.enabled === false ? "off" : "on");
+  });
+}
+
+function renderLog(log){
+  const hist = (log && log.history) ? log.history.slice().reverse() : [];
+  const body = document.getElementById("log-body");
+  const box  = document.getElementById("log-box");
+
+  const now  = new Date();
+  const ymd  = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+  const month = hist.filter(h => (h.date||"").startsWith(ymd));
+  const days  = new Set(month.map(h => h.date)).size;
+
+  document.getElementById("s-count").innerHTML = month.length + "<small>次</small>";
+  document.getElementById("s-days").innerHTML  = days + "<small>天</small>";
+
+  if(hist.length){
+    const first = hist[hist.length-1].date, last = hist[0].date;
+    const d1 = new Date(first), d2 = new Date(last);
+    const span = Math.max(1, Math.round((d2-d1)/86400000) + 1);
+    document.getElementById("s-span").innerHTML = span + "<small>天</small>";
+  }
+
+  if(!hist.length){
+    box.innerHTML = '<div class="empty">还没有推送记录 —— 首次运行后这里会自动出现数据</div>';
+    return;
+  }
+
+  body.innerHTML = hist.slice(0,14).map(h=>{
+    const t = (h.ts||"").split("T")[1] || "—";
+    const chs = (h.channels||[]).map(c => c==="dingtalk" ? "钉钉" : "飞书").join(" · ") || "—";
+    return `<tr>
+      <td class="mono">${h.date||"—"}</td>
+      <td><span class="tag ${h.type}">${h.type==="in"?"上班":"下班"}</span></td>
+      <td class="mono">${t}</td>
+      <td class="ch">${chs}</td>
+    </tr>`;
+  }).join("");
+}
+
+(async ()=>{
+  const [cfgRaw, logRaw] = await Promise.all([
+    loadJSON("config.json"),
+    loadJSON("data/reminder_log.json")
+  ]);
+  renderPlan(cfgRaw || FALLBACK_CFG);
+  renderLog(logRaw);
+  document.getElementById("load-hint").textContent =
+    (cfgRaw && logRaw) ? "数据已同步" : "本地预览模式（未读取到实时数据）";
+})();
+</script>
+</body>
+</html>
