@@ -3,125 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>打卡提醒 · tonia-checkin-reminder</title>
+<title>看板 · 打卡提醒</title>
+<meta name="theme-color" content="#0b0f16">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/style.css">
 <style>
-  :root{
-    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128;
-    --line:#30363d; --txt:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
-    --blue:#58a6ff; --dt:#3b82f6; --fs:#f0883e;
-    --ok:#3fb950; --warn:#d29922; --off:#484f58;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:var(--bg); color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    line-height:1.6; min-height:100vh;
-    background-image:radial-gradient(circle at 15% 0%,rgba(88,166,255,.10),transparent 45%),
-                     radial-gradient(circle at 85% 10%,rgba(240,136,62,.08),transparent 40%);
-    background-attachment:fixed;
-  }
-  .wrap{max-width:1000px;margin:0 auto;padding:56px 24px 80px}
-
-  header{margin-bottom:38px}
-  .badge{
-    display:inline-flex;align-items:center;gap:7px;
-    font-size:12px;letter-spacing:.04em;color:var(--blue);
-    border:1px solid rgba(88,166,255,.35);background:rgba(88,166,255,.08);
-    padding:4px 11px;border-radius:999px;margin-bottom:16px;
-  }
-  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
-  h1{font-size:30px;font-weight:650;letter-spacing:-.02em;margin-bottom:8px}
-  h1 span{color:var(--dim2);font-weight:400}
-  .sub{color:var(--dim);font-size:14px}
-
-  h2{
-    font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--dim2);margin:38px 0 16px;
-  }
-
-  .setup-link{
-    display:inline-flex;align-items:center;gap:7px;flex:none;
-    font-size:13.5px;padding:9px 16px;border-radius:8px;
-    border:1px solid var(--line);background:var(--bg2);color:var(--txt);
-    text-decoration:none;transition:all .18s;
-  }
-  .setup-link:hover{border-color:var(--blue);color:var(--blue);text-decoration:none}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+  .top-actions{display:flex;gap:9px;flex:none}
 
   /* 提醒列表 */
   .rem-list{display:flex;flex-direction:column;gap:10px}
   .rem-row{
     display:flex;align-items:center;gap:18px;
-    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
-    padding:15px 20px;position:relative;overflow:hidden;
-    transition:border-color .2s,transform .2s;
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+    padding:15px 20px;transition:border-color .2s,transform .2s;
   }
   .rem-row:hover{transform:translateX(3px)}
-  .rem-row::before{content:'';position:absolute;inset:0 auto 0 0;width:3px}
-  .rem-row.dt::before{background:var(--dt)}
-  .rem-row.fs::before{background:var(--fs)}
-  .rem-row.both::before{background:linear-gradient(180deg,var(--dt) 50%,var(--fs) 50%)}
   .rem-row.dt:hover{border-color:rgba(59,130,246,.45)}
   .rem-row.fs:hover{border-color:rgba(240,136,62,.45)}
-  .rem-row.off{opacity:.45}
-  .rem-row.off .rem-time{color:var(--off) !important}
 
   .rem-time{
-    font-size:23px;font-weight:650;font-variant-numeric:tabular-nums;
-    letter-spacing:-.01em;flex:none;min-width:74px;
+    font-family:var(--mono);font-size:23px;font-weight:650;
+    letter-spacing:-.01em;flex:none;min-width:76px;
   }
-  .rem-row.dt .rem-time{color:var(--dt)}
-  .rem-row.fs .rem-time{color:var(--fs)}
+  .rem-row.dt .rem-time{color:#79b8ff}
+  .rem-row.fs .rem-time{color:#f0b27a}
   .rem-row.both .rem-time{color:var(--txt)}
+  .rem-row.off .rem-time{color:var(--dim2)}
 
   .rem-body{flex:1;min-width:0}
-  .rem-msg{font-size:14px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rem-msg{font-size:13.5px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .rem-meta{font-size:12px;color:var(--dim2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
-  .tag{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:6px;font-weight:500}
-  .tag.dt{color:var(--dt);background:rgba(59,130,246,.14)}
-  .tag.fs{color:var(--fs);background:rgba(240,136,62,.14)}
-
-  .pill{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500;
-    border:1px solid var(--line);color:var(--dim);flex:none}
-  .pill.on{color:var(--ok);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.1)}
-  .pill.off{color:var(--off)}
-
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  @media(max-width:720px){.stats{grid-template-columns:1fr}}
-  .stat{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:20px}
-  .stat-label{font-size:12px;color:var(--dim2);letter-spacing:.05em;margin-bottom:8px}
-  .stat-val{font-size:26px;font-weight:650;font-variant-numeric:tabular-nums}
-  .stat-val small{font-size:14px;color:var(--dim);font-weight:400;margin-left:4px}
-
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  thead th{
-    text-align:left;color:var(--dim2);font-weight:500;font-size:12px;
-    letter-spacing:.06em;text-transform:uppercase;
-    padding:0 14px 10px;border-bottom:1px solid var(--line);
+  /* 统计 */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .stat{
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+    padding:19px;transition:border-color .18s,transform .18s;
   }
-  tbody td{padding:11px 14px;border-bottom:1px solid rgba(48,54,61,.55)}
-  tbody tr:hover{background:rgba(88,166,255,.045)}
-  tbody tr:last-child td{border-bottom:none}
-  .ch{color:var(--dim);font-size:12.5px}
-  .mono{font-variant-numeric:tabular-nums;color:var(--dim)}
+  .stat:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .stat-label{font-size:11.5px;color:var(--dim2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px}
+  .stat-val{font-family:var(--mono);font-size:27px;font-weight:650;line-height:1.1}
+  .stat-val small{font-family:inherit;font-size:13px;color:var(--dim);font-weight:400;margin-left:5px}
 
-  .empty{color:var(--dim2);font-size:13.5px;padding:26px 0;text-align:center}
-
+  /* 链路 */
   .flow{
-    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
-    padding:22px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
-    font-size:12.5px;line-height:1.95;color:var(--dim);overflow-x:auto;white-space:pre;
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+    padding:22px;font-family:var(--mono);font-size:12.5px;
+    line-height:1.95;color:var(--dim);overflow-x:auto;white-space:pre;
   }
   .flow b{color:var(--blue);font-weight:500}
   .flow i{color:var(--ok);font-style:normal}
+  .flow s{color:var(--accent);text-decoration:none}
 
-  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
-    color:var(--dim2);font-size:12.5px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
-  a{color:var(--blue);text-decoration:none}
-  a:hover{text-decoration:underline}
+  .note{
+    margin-top:14px;background:rgba(210,153,34,.07);
+    border:1px solid rgba(210,153,34,.28);border-radius:var(--r-sm);
+    padding:12px 15px;font-size:12.5px;color:#e3b341;line-height:1.75;
+  }
+  .note code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
 
+  @media(max-width:720px){.stats{grid-template-columns:1fr}}
   @media(max-width:620px){
-    .rem-time{font-size:19px;min-width:60px}
+    .rem-time{font-size:19px;min-width:62px}
     .rem-msg{white-space:normal}
     .rem-row{gap:12px;padding:13px 16px}
   }
@@ -130,40 +76,46 @@
 <body>
 <div class="wrap">
 
-  <header style="display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap">
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img src="assets/icons/avatar-128.png" alt="鱼丸">
+      <span class="brand-txt">
+        <b>打卡提醒</b>
+        <span>tonia-checkin-reminder</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="active">看板</a>
+      <a href="settings.html">设置</a>
+      <a href="changelog.html">更新日志</a>
+    </div>
+  </nav>
+
+  <div class="page-head top">
     <div>
-      <div class="badge"><span class="dot"></span> GitHub Actions · 运行中</div>
-      <h1>打卡提醒 <span>/ tonia-checkin-reminder</span></h1>
+      <div class="badge live" style="margin-bottom:15px"><span class="dot"></span> GitHub Actions · 运行中</div>
+      <h1>打卡提醒</h1>
       <p class="sub" id="sub-line">工作日定时推送打卡提醒 · 钉钉 + 飞书 · 自动跳过节假日与调休</p>
     </div>
-    <a class="setup-link" href="settings.html">⚙️ 设置提醒</a>
-  </header>
+    <div class="top-actions">
+      <a class="btn" href="settings.html">设置提醒</a>
+    </div>
+  </div>
 
   <h2>提醒列表</h2>
   <div class="rem-list" id="rem-list"><div class="empty">正在加载…</div></div>
 
   <h2>本月概览</h2>
   <div class="stats">
-    <div class="stat">
-      <div class="stat-label">本月已推送</div>
-      <div class="stat-val" id="s-count">0<small>次</small></div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">覆盖天数</div>
-      <div class="stat-val" id="s-days">0<small>天</small></div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">配置提醒</div>
-      <div class="stat-val" id="s-total">0<small>条</small></div>
-    </div>
+    <div class="stat"><div class="stat-label">本月已推送</div><div class="stat-val" id="s-count">0<small>次</small></div></div>
+    <div class="stat"><div class="stat-label">覆盖天数</div><div class="stat-val" id="s-days">0<small>天</small></div></div>
+    <div class="stat"><div class="stat-label">配置提醒</div><div class="stat-val" id="s-total">0<small>条</small></div></div>
   </div>
 
   <h2>推送记录</h2>
   <div id="log-box">
     <table>
-      <thead>
-        <tr><th>日期</th><th>时间点</th><th>提醒</th><th>通道</th></tr>
-      </thead>
+      <thead><tr><th>日期</th><th>时间点</th><th>提醒</th><th>通道</th></tr></thead>
       <tbody id="log-body"></tbody>
     </table>
   </div>
@@ -171,15 +123,20 @@
   <h2>运行链路</h2>
   <div class="flow">cron-job.org ──<b>每 5 分钟 ping 一次</b>──▶ GitHub Actions
                                         │
-                                        ├─ 时间窗口判定  <i>命中 [设定时间, 设定时间+容差] 才继续，其余轮次秒退</i>
+                                        ├─ 时间窗口判定  <i>命中 [设定时间-1分, 设定时间+容差] 才继续，其余轮次秒退</i>
                                         ├─ 当日去重      <i>按提醒 ID 去重，同一条每天最多推一次</i>
                                         ├─ 工作日判定    <i>timor.tech 节假日接口（含调休补班）</i>
                                         ├─ 消息组装      <i>自定义文案 + 可选天气 / 月度进度</i>
                                         ├─ 通道分发      <i>按每条提醒自己的 channels 发往钉钉 / 飞书</i>
                                         └─ 日志回写      <i>data/reminder_log.json</i>
 
-  <i>※ 定时器只管「叫醒」，发不发由 config.json 里每条提醒的时间决定 →</i>
+  <s>※ 定时器只管「叫醒」，发不发由 config.json 里每条提醒的时间决定</s>
   <i>  所以 settings.html 改完即刻生效，无需动定时器。</i></div>
+
+  <div class="note">
+    <b>关于时间精度</b>：轮询粒度是 5 分钟，提醒时间建议对齐到 5 的倍数（<code>:00</code> <code>:05</code> <code>:10</code> …），送达误差约 +15 秒；
+    非整五分钟的时间点会被吸附到最近的轮询点 —— 例如 <code>18:01</code> 会在 <code>18:00</code> 那次轮询就发出（早约 45 秒），<code>18:03</code> 则要等到 <code>18:05</code>。
+  </div>
 
   <footer>
     <span>tonia-checkin-reminder · 零服务器 · 零成本</span>
@@ -211,7 +168,7 @@ async function loadJSON(path){
 }
 
 function renderReminders(cfg){
-  const list = (cfg.reminders || []).slice().sort((a,b) => (a.time||"").localeCompare(b.time||""));
+  const list = (cfg.reminders || []).slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
   const box = document.getElementById("rem-list");
 
   document.getElementById("s-total").innerHTML = list.length + "<small>条</small>";
@@ -221,8 +178,8 @@ function renderReminders(cfg){
     return;
   }
 
-  const dt = list.filter(r => (r.channels||[]).includes("dingtalk")).length;
-  const fs = list.filter(r => (r.channels||[]).includes("feishu")).length;
+  const dt = list.filter(r => (r.channels || []).includes("dingtalk")).length;
+  const fs = list.filter(r => (r.channels || []).includes("feishu")).length;
   document.getElementById("sub-line").textContent =
     `已配置 ${list.length} 条提醒 · 钉钉 ${dt} · 飞书 ${fs} · 自动跳过节假日与调休`;
 
@@ -230,9 +187,10 @@ function renderReminders(cfg){
     const chs = r.channels || ["dingtalk"];
     const cls = chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt");
     const off = r.enabled === false ? " off" : "";
-    const tags = chs.map(c => `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join("");
+    const tags = chs.map(c =>
+      `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join("");
     const msg = (r.message || "").trim() || "<span style='color:var(--dim2)'>（无自定义文案）</span>";
-    return `<div class="rem-row ${cls}${off}">
+    return `<div class="rem-row stripe ${cls}${off} fade-up">
       <div class="rem-time">${esc(r.time || "--:--")}</div>
       <div class="rem-body">
         <div class="rem-msg">${msg}</div>
@@ -249,8 +207,8 @@ function renderLog(log, cfg){
   const box  = document.getElementById("log-box");
 
   const now  = new Date();
-  const ymd  = now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
-  const month = hist.filter(h => (h.date||"").startsWith(ymd));
+  const ymd  = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const month = hist.filter(h => (h.date || "").startsWith(ymd));
   const days  = new Set(month.map(h => h.date)).size;
 
   document.getElementById("s-count").innerHTML = month.length + "<small>次</small>";
@@ -266,11 +224,12 @@ function renderLog(log, cfg){
     return r ? `${r.emoji || ""} ${r.label || "提醒"}`.trim() : (rid || "—");
   };
 
-  body.innerHTML = hist.slice(0,14).map(h => {
-    const t = (h.ts||"").split("T")[1] || "—";
-    const chs = (h.channels||[]).map(c => `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join(" ") || "—";
+  body.innerHTML = hist.slice(0, 14).map(h => {
+    const t = (h.ts || "").split("T")[1] || "—";
+    const chs = (h.channels || []).map(c =>
+      `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join(" ") || "—";
     return `<tr>
-      <td class="mono">${esc(h.date||"—")}</td>
+      <td class="mono">${esc(h.date || "—")}</td>
       <td class="mono">${esc(h.time || h.rid || "—")}</td>
       <td class="ch">${esc(labelOf(h.rid))}</td>
       <td>${chs}</td>
@@ -278,7 +237,7 @@ function renderLog(log, cfg){
   }).join("");
 }
 
-(async ()=>{
+(async () => {
   const [cfgRaw, logRaw] = await Promise.all([
     loadJSON("config.json"),
     loadJSON("data/reminder_log.json")

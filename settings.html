@@ -3,82 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>提醒设置 · tonia-checkin-reminder</title>
+<title>设置 · 打卡提醒</title>
+<meta name="theme-color" content="#0b0f16">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/style.css">
 <style>
-  :root{
-    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128;
-    --line:#30363d; --txt:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
-    --blue:#58a6ff; --dt:#3b82f6; --fs:#f0883e;
-    --ok:#3fb950; --warn:#d29922; --err:#f85149;
-  }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:var(--bg);color:var(--txt);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-    line-height:1.6;min-height:100vh;
-    background-image:radial-gradient(circle at 15% 0%,rgba(88,166,255,.10),transparent 45%),
-                     radial-gradient(circle at 85% 10%,rgba(240,136,62,.08),transparent 40%);
-    background-attachment:fixed;
-  }
-  .wrap{max-width:780px;margin:0 auto;padding:36px 20px 130px}
+  .wrap{padding-bottom:130px}
 
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
-  .back{color:var(--dim);text-decoration:none;font-size:13.5px;transition:color .2s}
-  .back:hover{color:var(--blue)}
-  h1{font-size:23px;font-weight:650;letter-spacing:-.02em;margin-bottom:6px}
-  .sub{color:var(--dim);font-size:13.5px;margin-bottom:22px}
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 
-  .card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
-  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
-  .card-title{font-size:15px;font-weight:600}
-  .hint{font-size:12.5px;color:var(--dim2)}
-  label.lbl{display:block;font-size:12.5px;color:var(--dim);margin-bottom:5px}
+  label.lbl{display:block;font-size:12px;color:var(--dim);margin-bottom:5px;letter-spacing:.02em}
 
   input[type=text],input[type=password],input[type=time],input[type=number],textarea,select{
     width:100%;background:var(--bg);color:var(--txt);
-    border:1px solid var(--line);border-radius:8px;
-    padding:8px 11px;font-size:14px;font-family:inherit;
+    border:1px solid var(--line);border-radius:var(--r-sm);
+    padding:8px 11px;font-size:13.5px;font-family:inherit;
     transition:border-color .18s,box-shadow .18s;
   }
-  textarea{resize:vertical;min-height:62px;line-height:1.65}
+  textarea{resize:vertical;min-height:64px;line-height:1.65}
   input:focus,textarea:focus,select:focus{
     outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.14);
   }
-  input[type=time]{font-variant-numeric:tabular-nums;cursor:pointer;width:auto;min-width:112px}
+  input[type=time]{font-family:var(--mono);cursor:pointer;width:auto;min-width:114px}
   input:disabled,textarea:disabled,select:disabled{opacity:.45;cursor:not-allowed}
 
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+  @media(max-width:640px){.row{grid-template-columns:1fr}}
 
   /* 提醒卡片 */
-  .rem{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;transition:border-color .18s}
-  .rem::before{content:'';position:absolute;inset:0 auto 0 0;width:3px}
-  .rem.has-dt::before{background:var(--dt)}
-  .rem.has-fs::before{background:var(--fs)}
-  .rem.has-both::before{background:linear-gradient(180deg,var(--dt) 50%,var(--fs) 50%)}
-  .rem.off{opacity:.5}
-  .rem:hover{border-color:#484f58}
+  .rem{
+    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px;margin-bottom:12px;transition:border-color .18s;
+  }
+  .rem:hover{border-color:var(--line2)}
+  .rem-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
+  .rem-idx{font-family:var(--mono);font-size:11.5px;color:var(--dim2);flex:none;min-width:18px}
+  .rem-actions{margin-left:auto;display:flex;align-items:center;gap:7px}
 
-  .rem-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-  .rem-idx{font-size:11px;color:var(--dim2);font-variant-numeric:tabular-nums;flex:none;min-width:18px}
-  .rem-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+  .t-col{display:flex;flex-direction:column;gap:4px}
+  .snap{font-size:11.5px;line-height:1.4;min-height:16px;transition:color .2s}
+  .snap.ok{color:var(--ok)}
+  .snap.early{color:var(--warn)}
+  .snap.late{color:var(--dim2)}
 
   .chips{display:flex;gap:6px}
   .chip{
     border:1px solid var(--line);background:var(--bg);color:var(--dim2);
-    padding:5px 11px;border-radius:7px;font-size:12.5px;font-family:inherit;
+    padding:5px 12px;border-radius:8px;font-size:12.5px;font-family:inherit;
     cursor:pointer;transition:all .16s;
   }
-  .chip:hover{border-color:#484f58;color:var(--txt)}
+  .chip:hover:not(:disabled){border-color:var(--line2);color:var(--txt)}
   .chip.on[data-ch=dingtalk]{background:rgba(59,130,246,.16);border-color:var(--dt);color:#79b8ff}
   .chip.on[data-ch=feishu]{background:rgba(240,136,62,.16);border-color:var(--fs);color:#f0b27a}
   .chip:disabled{opacity:.4;cursor:not-allowed}
 
   .icon-btn{
     border:1px solid var(--line);background:var(--bg);color:var(--dim);
-    width:30px;height:30px;border-radius:7px;cursor:pointer;
-    font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+    width:31px;height:31px;border-radius:8px;cursor:pointer;
+    font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
     transition:all .16s;font-family:inherit;
   }
   .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err)}
@@ -87,69 +71,63 @@
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none}
   .switch input{opacity:0;width:0;height:0;position:absolute}
   .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s;cursor:pointer}
-  .slider::before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;background:#8b949e;border-radius:50%;transition:.2s}
-  .switch input:checked + .slider{background:rgba(88,166,255,.35)}
-  .switch input:checked + .slider::before{transform:translateX(17px);background:var(--blue)}
+  .slider::before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;background:#94a3b8;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:rgba(240,136,62,.4)}
+  .switch input:checked + .slider::before{transform:translateX(17px);background:var(--accent)}
   .switch input:disabled + .slider{opacity:.4;cursor:not-allowed}
 
-  .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:6px;
-    border:1px solid var(--line);background:var(--bg3);color:var(--txt);
-    padding:8px 16px;border-radius:8px;font-size:13.5px;font-family:inherit;
-    cursor:pointer;transition:all .18s;white-space:nowrap;
+  .actionbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:rgba(11,15,22,.93);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);padding:13px 22px;
   }
-  .btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
-  .btn:disabled{opacity:.4;cursor:not-allowed}
-  .btn.primary{background:var(--blue);border-color:var(--blue);color:#06121f;font-weight:600}
-  .btn.primary:hover:not(:disabled){background:#79b8ff;border-color:#79b8ff;color:#06121f}
-  .btn.sm{padding:5px 12px;font-size:12.5px}
-  .btn.block{width:100%;border-style:dashed;color:var(--dim)}
-  .btn.block:hover:not(:disabled){color:var(--blue);border-color:var(--blue);border-style:dashed}
-
-  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,17,23,.94);
-    backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:13px 20px;z-index:20}
-  .actionbar-inner{max-width:780px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar-inner{max-width:800px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .spacer{flex:1}
 
-  .status{font-size:12.5px;padding:9px 13px;border-radius:8px;margin-bottom:14px;
-    border:1px solid var(--line);color:var(--dim);display:none}
-  .status.show{display:block}
-  .status.ok{color:var(--ok);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
-  .status.err{color:var(--err);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
-  .status.warn{color:var(--warn);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.08)}
-  .status.info{color:var(--blue);border-color:rgba(88,166,255,.4);background:rgba(88,166,255,.08)}
-
-  .warn-box{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);
-    border-radius:10px;padding:13px 15px;font-size:12.5px;color:#e3b341;line-height:1.75;margin-bottom:14px}
+  .warn-box{
+    background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.28);
+    border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;
+    color:#e3b341;line-height:1.8;margin-bottom:18px;
+  }
   .warn-box b{color:#f0c674}
-  .warn-box code{background:rgba(0,0,0,.3);padding:1.5px 6px;border-radius:4px;font-size:12px;color:#e6edf3}
+  .warn-box code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
 
-  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
-    padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim2)}
-  .badge.on{color:var(--ok);border-color:rgba(63,185,80,.4)}
-  .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
-
-  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(48,54,61,.5)}
+  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(36,45,59,.5)}
   .opt:last-child{border-bottom:none;padding-bottom:0}
   .opt:first-child{padding-top:0}
   .opt-text{font-size:13.5px}
-  .opt-desc{font-size:12px;color:var(--dim2);margin-top:2px}
+  .opt-desc{font-size:12px;color:var(--dim2);margin-top:3px}
 
-  .empty{color:var(--dim2);font-size:13.5px;padding:24px 0;text-align:center}
-  .spin{display:inline-block;animation:sp 1s linear infinite}
-  @keyframes sp{to{transform:rotate(360deg)}}
+  @media(max-width:640px){
+    .rem-actions{margin-left:0;width:100%}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap narrow">
 
-  <div class="topbar">
-    <a class="back" href="index.html">← 返回看板</a>
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img src="assets/icons/avatar-128.png" alt="鱼丸">
+      <span class="brand-txt">
+        <b>打卡提醒</b>
+        <span>tonia-checkin-reminder</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">看板</a>
+      <a href="settings.html" class="active">设置</a>
+      <a href="changelog.html">更新日志</a>
+    </div>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1>提醒设置</h1>
+      <p class="sub">每条提醒可单独设定时间、通道和文案 · 保存后提交到 GitHub，下一轮轮询即生效</p>
+    </div>
     <span class="badge" id="conn-badge"><span class="dot"></span><span id="conn-badge-text">未连接</span></span>
   </div>
-
-  <h1>打卡提醒设置</h1>
-  <p class="sub">每条提醒可单独设定时间、通道和文案 · 保存后直接提交到 GitHub，下一轮轮询即生效</p>
 
   <div class="status" id="status"></div>
 
@@ -161,34 +139,22 @@
 
   <div class="card">
     <div class="card-head">
-      <div class="card-title">🔗 仓库连接</div>
+      <div class="card-title">仓库连接</div>
       <button class="btn sm" id="btn-connect">连接并加载</button>
     </div>
     <div class="row">
-      <div class="field">
-        <label class="lbl">GitHub 用户名</label>
-        <input type="text" id="conn-owner" placeholder="ToniaXuu" autocomplete="off">
-      </div>
-      <div class="field">
-        <label class="lbl">仓库名</label>
-        <input type="text" id="conn-repo" placeholder="tonia-checkin-reminder" autocomplete="off">
-      </div>
+      <div><label class="lbl">GitHub 用户名</label><input type="text" id="conn-owner" placeholder="ToniaXuu" autocomplete="off"></div>
+      <div><label class="lbl">仓库名</label><input type="text" id="conn-repo" placeholder="tonia-checkin-reminder" autocomplete="off"></div>
     </div>
-    <div class="row">
-      <div class="field">
-        <label class="lbl">分支</label>
-        <input type="text" id="conn-branch" value="main" autocomplete="off">
-      </div>
-      <div class="field">
-        <label class="lbl">访问令牌（PAT）</label>
-        <input type="password" id="conn-token" placeholder="github_pat_..." autocomplete="off">
-      </div>
+    <div class="row" style="margin-top:13px">
+      <div><label class="lbl">分支</label><input type="text" id="conn-branch" value="main" autocomplete="off"></div>
+      <div><label class="lbl">访问令牌（PAT）</label><input type="password" id="conn-token" placeholder="github_pat_..." autocomplete="off"></div>
     </div>
-    <div class="hint">只填一次，浏览器会记住。换设备或清缓存后需重填。</div>
+    <div class="hint" style="margin-top:11px">只填一次，浏览器会记住。换设备或清缓存后需重填。</div>
   </div>
 
-  <div class="card-head" style="margin:22px 0 12px">
-    <div class="card-title">⏰ 提醒列表 <span class="hint" id="rem-count"></span></div>
+  <div class="card-head" style="margin:26px 0 13px">
+    <div class="card-title">提醒列表 <span class="hint" id="rem-count"></span></div>
   </div>
 
   <div id="reminder-list"><div class="empty">未连接，暂无数据</div></div>
@@ -196,13 +162,10 @@
   <button class="btn block" id="btn-add" disabled>+ 添加提醒</button>
 
   <div class="card" style="margin-top:20px">
-    <div class="card-head"><div class="card-title">📍 位置与天气</div></div>
+    <div class="card-head"><div class="card-title">位置与天气</div></div>
     <div class="row">
-      <div class="field">
-        <label class="lbl">城市</label>
-        <select id="city-select" disabled></select>
-      </div>
-      <div class="field">
+      <div><label class="lbl">城市</label><select id="city-select" disabled></select></div>
+      <div>
         <label class="lbl">经纬度（自定义时手填）</label>
         <div class="row" style="gap:8px">
           <input type="text" id="city-lat" placeholder="纬度" disabled>
@@ -213,7 +176,7 @@
   </div>
 
   <div class="card">
-    <div class="card-head"><div class="card-title">⚙️ 全局规则</div></div>
+    <div class="card-head"><div class="card-title">全局规则</div></div>
     <div class="opt">
       <div>
         <div class="opt-text">自动跳过周末与法定节假日</div>
@@ -245,10 +208,9 @@
     <div class="opt">
       <div>
         <div class="opt-text">时间容差</div>
-        <div class="opt-desc">轮询间隔内允许多少分钟延迟仍算命中</div>
+        <div class="opt-desc">轮询间隔内允许多少分钟延迟仍算命中（默认 10）</div>
       </div>
-      <input type="number" id="opt-tolerance" min="1" max="60" value="10"
-             style="width:78px;text-align:center" disabled>
+      <input type="number" id="opt-tolerance" min="1" max="60" value="10" style="width:80px;text-align:center" disabled>
     </div>
   </div>
 
@@ -258,7 +220,7 @@
   <div class="actionbar-inner">
     <button class="btn primary" id="btn-save" disabled>保存到 GitHub</button>
     <span class="spacer"></span>
-    <span class="hint" id="saved-hint" style="margin:0"></span>
+    <span class="hint" id="saved-hint"></span>
   </div>
 </div>
 
@@ -286,13 +248,23 @@ const esc = s => String(s == null ? "" : s)
 
 const GLOBAL_FIELDS = ["city-select","city-lat","city-lon","opt-holidays","opt-weather","opt-month","opt-quote","opt-tolerance"];
 
+/* 轮询粒度 5 分钟 —— 提示用户这个时间点实际会在什么时候发出 */
+function snapInfo(t){
+  const m = parseInt(String(t || "").split(":")[1], 10);
+  if(isNaN(m)) return null;
+  const r = m % 5;
+  if(r === 0) return {kind: "ok",    text: "对准轮询点 · 误差约 +15 秒"};
+  if(r === 1) return {kind: "early", text: "会提前到前一个轮询点发出（早约 45 秒）"};
+  return {kind: "late", text: "会延迟到下一个轮询点发出（晚约 " + (5 - r) + " 分钟）"};
+}
+
 function setEnabled(on){
   connected = on;
   GLOBAL_FIELDS.forEach(id => { $(id).disabled = !on; });
   $("btn-save").disabled = !on;
   $("btn-add").disabled = !on;
   renderReminders();
-  $("conn-badge").className = "badge " + (on ? "on" : "");
+  $("conn-badge").className = "badge " + (on ? "live" : "");
   $("conn-badge-text").textContent = on ? "已连接" : "未连接";
 }
 
@@ -330,7 +302,6 @@ function headers(withAuth){
   return h;
 }
 
-/* ── 城市 ── */
 function initCities(){
   const sel = $("city-select");
   sel.innerHTML = CITY_PRESETS
@@ -344,37 +315,35 @@ function initCities(){
   });
 }
 
-/* ── 渲染提醒列表 ── */
 function remCard(r, i){
   const chs = r.channels || ["dingtalk"];
-  const cls = chs.length > 1 ? "has-both" : (chs[0] === "feishu" ? "has-fs" : "has-dt");
+  const cls = chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt");
   const off = r.enabled === false ? " off" : "";
-  const chip = k => `<button class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${connected ? "" : "disabled"}>${CH_LABEL[k]}</button>`;
+  const dis = connected ? "" : "disabled";
+  const chip = k => `<button class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${dis}>${CH_LABEL[k]}</button>`;
+  const s = snapInfo(r.time);
 
-  return `<div class="rem ${cls}${off}" data-idx="${i}">
+  return `<div class="rem stripe ${cls}${off}" data-idx="${i}">
     <div class="rem-top">
       <span class="rem-idx">${i + 1}</span>
-      <input type="time" data-field="time" value="${esc(r.time || "17:00")}" ${connected ? "" : "disabled"}>
+      <div class="t-col">
+        <input type="time" data-field="time" value="${esc(r.time || "17:00")}" ${dis}>
+        <span class="snap ${s ? s.kind : ""}" data-snap>${s ? s.text : ""}</span>
+      </div>
       <div class="chips">${chip("dingtalk")}${chip("feishu")}</div>
       <div class="rem-actions">
-        <button class="btn sm" data-act="test" ${connected ? "" : "disabled"}>测试</button>
-        <label class="switch"><input type="checkbox" data-field="enabled" ${r.enabled === false ? "" : "checked"} ${connected ? "" : "disabled"}><span class="slider"></span></label>
-        <button class="icon-btn" data-act="del" title="删除" ${connected ? "" : "disabled"}>×</button>
+        <button class="btn sm" data-act="test" ${dis}>测试</button>
+        <label class="switch"><input type="checkbox" data-field="enabled" ${r.enabled === false ? "" : "checked"} ${dis}><span class="slider"></span></label>
+        <button class="icon-btn" data-act="del" title="删除" ${dis}>×</button>
       </div>
     </div>
     <div class="row">
-      <div class="field">
-        <label class="lbl">标题</label>
-        <input type="text" data-field="label" value="${esc(r.label || "打卡提醒")}" placeholder="下班打卡" ${connected ? "" : "disabled"}>
-      </div>
-      <div class="field">
-        <label class="lbl">图标</label>
-        <input type="text" data-field="emoji" value="${esc(r.emoji || "🔔")}" placeholder="🔔" ${connected ? "" : "disabled"}>
-      </div>
+      <div><label class="lbl">标题</label><input type="text" data-field="label" value="${esc(r.label || "打卡提醒")}" placeholder="下班打卡" ${dis}></div>
+      <div><label class="lbl">图标</label><input type="text" data-field="emoji" value="${esc(r.emoji || "🔔")}" placeholder="🔔" ${dis}></div>
     </div>
-    <div class="field" style="margin-top:12px">
+    <div style="margin-top:13px">
       <label class="lbl">提示文案（留空则只用标题+时间）</label>
-      <textarea data-field="message" placeholder="该打卡了，别忘了。" ${connected ? "" : "disabled"}>${esc(r.message || "")}</textarea>
+      <textarea data-field="message" placeholder="该打卡了，别忘了。" ${dis}>${esc(r.message || "")}</textarea>
     </div>
   </div>`;
 }
@@ -395,6 +364,15 @@ function renderReminders(){
   $("rem-count").textContent = `共 ${model.length} 条`;
 }
 
+function refreshSnap(card){
+  const input = card.querySelector('[data-field="time"]');
+  const el = card.querySelector('[data-snap]');
+  if(!input || !el) return;
+  const s = snapInfo(input.value);
+  el.textContent = s ? s.text : "";
+  el.className = "snap " + (s ? s.kind : "");
+}
+
 function bindList(){
   const box = $("reminder-list");
 
@@ -404,9 +382,13 @@ function bindList(){
     if(!card || !f) return;
     const i = +card.dataset.idx;
     model[i][f] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
-    if(f === "enabled"){
-      card.classList.toggle("off", !e.target.checked);
-    }
+    if(f === "enabled") card.classList.toggle("off", !e.target.checked);
+    if(f === "time") refreshSnap(card);
+  });
+
+  box.addEventListener("change", e => {
+    const card = e.target.closest(".rem");
+    if(card && e.target.dataset.field === "time") refreshSnap(card);
   });
 
   box.addEventListener("click", e => {
@@ -420,7 +402,7 @@ function bindList(){
     if(act === "ch"){
       const k = btn.dataset.ch;
       const cur = model[i].channels || ["dingtalk"];
-      let next = cur.includes(k) ? cur.filter(x => x !== k) : cur.concat(k);
+      const next = cur.includes(k) ? cur.filter(x => x !== k) : cur.concat(k);
       if(!next.length){ status("每条提醒至少要保留一个通道", "warn"); return; }
       model[i].channels = next.sort();
       renderReminders();
@@ -441,7 +423,6 @@ function bindList(){
   });
 }
 
-/* ── 加载 / 保存 ── */
 async function loadConfig(){
   const c = conn();
   if(!c.owner || !c.repo){ status("请先填写用户名和仓库名", "err"); return; }
@@ -503,27 +484,21 @@ function buildConfig(){
   const lat = parseFloat($("city-lat").value), lon = parseFloat($("city-lon").value);
   if(isNaN(lat) || isNaN(lon)) throw new Error("经纬度必须是数字");
 
-  base.city = {
-    name: manual ? (prevName || "自定义") : sel.value,
-    lat, lon, timezone: "Asia/Shanghai"
-  };
+  base.city = { name: manual ? (prevName || "自定义") : sel.value, lat, lon, timezone: "Asia/Shanghai" };
   if(manual){
     const nm = prompt("给这个地点起个名字（会显示在提醒消息里）：", prevName === "自定义" ? "" : prevName);
     if(nm && nm.trim()) base.city.name = nm.trim();
   }
 
-  const clean = model.map(r => {
-    const o = {
-      id: r.id || ("rm-" + Math.random().toString(36).slice(2, 9)),
-      enabled: r.enabled !== false,
-      channels: (r.channels && r.channels.length) ? r.channels : ["dingtalk"],
-      time: r.time || "17:00",
-      label: (r.label || "打卡提醒").trim(),
-      emoji: (r.emoji || "🔔").trim(),
-      message: (r.message || "").trim()
-    };
-    return o;
-  });
+  const clean = model.map(r => ({
+    id: r.id || ("rm-" + Math.random().toString(36).slice(2, 9)),
+    enabled: r.enabled !== false,
+    channels: (r.channels && r.channels.length) ? r.channels : ["dingtalk"],
+    time: r.time || "17:00",
+    label: (r.label || "打卡提醒").trim(),
+    emoji: (r.emoji || "🔔").trim(),
+    message: (r.message || "").trim()
+  }));
   clean.sort((a, b) => a.time.localeCompare(b.time));
   base.reminders = clean;
 
@@ -534,6 +509,7 @@ function buildConfig(){
     include_quote: $("opt-quote").checked,
     tolerance_minutes: parseInt($("opt-tolerance").value, 10) || 10
   });
+
   delete base.schedule;
   delete base.options.max_late_minutes;
   delete base.options.include_countdown;
@@ -572,7 +548,7 @@ async function save(){
     model = cfg.reminders.map(x => Object.assign({}, x));
     renderReminders();
     $("saved-hint").textContent = "已保存 " + new Date().toLocaleTimeString("zh-CN", {hour12: false});
-    status(`✅ 已提交到 GitHub（${cfg.reminders.length} 条提醒）。定时任务下一轮（≤10 分钟）就会用新配置。`, "ok");
+    status(`已提交到 GitHub（${cfg.reminders.length} 条提醒）。定时任务下一轮（≤5 分钟）就会用新配置。`, "ok");
   }catch(e){
     status("保存失败：" + e.message, "err");
   }finally{
@@ -591,7 +567,7 @@ async function testRemind(r){
       body: JSON.stringify({ref: c.branch, inputs: {id: r.id, force: true}})
     });
     if(resp.status === 204){
-      status("✅ 已触发，约 20~60 秒后消息送达。若刚改过配置，请先点「保存到 GitHub」再测试。", "ok");
+      status("已触发，约 20~60 秒后消息送达。测试会忽略去重与工作日判断，也不会写入去重日志。", "ok");
     }else{
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.message || ("触发失败 " + resp.status));
@@ -601,7 +577,6 @@ async function testRemind(r){
   }
 }
 
-/* ── 启动 ── */
 initCities();
 bindList();
 setEnabled(false);

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>更新日志 · 打卡提醒</title>
+<meta name="theme-color" content="#0b0f16">
+<link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+
+  .timeline{position:relative;padding-left:28px}
+  .timeline::before{
+    content:'';position:absolute;left:7px;top:12px;bottom:12px;
+    width:1px;background:var(--line);
+  }
+
+  .rel{position:relative;margin-bottom:16px}
+  .rel::before{
+    content:'';position:absolute;left:-25px;top:24px;
+    width:9px;height:9px;border-radius:50%;
+    background:var(--bg);border:2px solid var(--line2);
+    transition:border-color .2s;
+  }
+  .rel.current::before{
+    background:var(--accent);border-color:var(--accent);
+    box-shadow:0 0 0 4px rgba(240,136,62,.16);
+  }
+  .rel:hover::before{border-color:var(--accent)}
+
+  .rel .card{margin-bottom:0}
+
+  .rel-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .ver{
+    font-family:var(--mono);font-size:13px;font-weight:600;
+    color:var(--accent);background:rgba(240,136,62,.12);
+    border:1px solid rgba(240,136,62,.3);
+    padding:3px 10px;border-radius:7px;
+  }
+  .ver-now{
+    font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:#180c02;background:var(--accent);font-weight:600;
+    padding:3px 8px;border-radius:6px;
+  }
+  .rel-title{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+  .rel-date{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim2)}
+
+  .changes{list-style:none;display:flex;flex-direction:column;gap:9px}
+  .changes li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.62}
+  .ct{
+    font-size:11px;padding:2px 7px;border-radius:5px;flex:none;
+    font-weight:500;letter-spacing:.02em;min-width:54px;text-align:center;
+    margin-top:2px;
+  }
+  .ct.feat{color:#7ee787;background:rgba(63,185,80,.15)}
+  .ct.fix{color:#ff9b95;background:rgba(248,81,73,.15)}
+  .ct.style{color:#d2a8ff;background:rgba(163,113,247,.18)}
+  .ct.refactor{color:#79b8ff;background:rgba(59,130,246,.16)}
+  .ct.docs,.ct.chore{color:var(--dim);background:rgba(255,255,255,.06)}
+
+  .note{
+    margin-top:22px;background:rgba(88,166,255,.06);
+    border:1px solid rgba(88,166,255,.25);border-radius:var(--r-sm);
+    padding:14px 16px;font-size:12.5px;color:#a5cdfd;line-height:1.8;
+  }
+  .note b{color:#cfe4ff}
+  .note code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
+
+  @media(max-width:640px){
+    .rel-date{margin-left:0;width:100%}
+    .timeline{padding-left:22px}
+    .rel::before{left:-19px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap narrow">
+
+  <nav class="nav">
+    <a class="brand" href="index.html">
+      <img src="assets/icons/avatar-128.png" alt="鱼丸">
+      <span class="brand-txt">
+        <b>打卡提醒</b>
+        <span>tonia-checkin-reminder</span>
+      </span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">看板</a>
+      <a href="settings.html">设置</a>
+      <a href="changelog.html" class="active">更新日志</a>
+    </div>
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <h1>更新日志</h1>
+      <p class="sub">每个版本都记在这里 · 改动代码的同时追加一条记录</p>
+    </div>
+    <span class="badge accent" id="ver-badge">当前版本 v—</span>
+  </div>
+
+  <div class="timeline" id="timeline"><div class="empty">正在加载…</div></div>
+
+  <div class="note">
+    <b>怎么追加一条更新日志</b><br>
+    编辑 <code>data/changelog.json</code>，在 <code>releases</code> 数组<b>开头</b>插入一条新记录，并把顶层的 <code>current</code> 改成新版本号即可。
+    类型用 <code>feat</code> / <code>fix</code> / <code>style</code> / <code>refactor</code> / <code>docs</code> / <code>chore</code>，
+    页面会自动上色分类。这个页面本身是纯静态的，改完推上去刷新就能看到。
+  </div>
+
+  <footer>
+    <span>tonia-checkin-reminder · 零服务器 · 零成本</span>
+    <span id="load-hint">正在加载…</span>
+  </footer>
+
+</div>
+
+<script>
+const TYPE_LABEL = {
+  feat: "新功能", fix: "修复", style: "界面",
+  refactor: "重构", docs: "文档", chore: "杂项"
+};
+
+const FALLBACK = {
+  current: "1.4.0",
+  releases: [
+    {
+      version: "1.4.0", date: "2026-09-22", title: "视觉改版与发布页",
+      changes: [
+        {type: "feat", text: "新增更新日志页，此后每次改动都会在这里追加一条记录"},
+        {type: "feat", text: "新增站点图标（鱼丸猫）"}
+      ]
+    }
+  ]
+};
+
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+async function loadChangelog(){
+  try{
+    const r = await fetch("data/changelog.json?t=" + Date.now(), {cache: "no-store"});
+    if(!r.ok) throw new Error(r.status);
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+function render(data){
+  const releases = (data.releases || []);
+  const box = document.getElementById("timeline");
+
+  document.getElementById("ver-badge").textContent = "当前版本 v" + (data.current || "—");
+
+  if(!releases.length){
+    box.innerHTML = '<div class="empty">还没有任何发布记录</div>';
+    return;
+  }
+
+  box.innerHTML = releases.map((rel, i) => {
+    const cur = i === 0 ? " current" : "";
+    const items = (rel.changes || []).map(c => {
+      const t = c.type || "chore";
+      return `<li>
+        <span class="ct ${esc(t)}">${esc(TYPE_LABEL[t] || t)}</span>
+        <span>${esc(c.text)}</span>
+      </li>`;
+    }).join("");
+
+    return `<div class="rel${cur} fade-up">
+      <div class="card">
+        <div class="rel-head">
+          <span class="ver">v${esc(rel.version)}</span>
+          ${i === 0 ? '<span class="ver-now">当前</span>' : ""}
+          <span class="rel-title">${esc(rel.title || "")}</span>
+          <span class="rel-date">${esc(rel.date || "")}</span>
+        </div>
+        <ul class="changes">${items}</ul>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+(async () => {
+  const data = await loadChangelog() || FALLBACK;
+  render(data);
+  document.getElementById("load-hint").textContent =
+    (data === FALLBACK) ? "本地预览模式（未读取到实时数据）" : `共 ${(data.releases || []).length} 个版本`;
+})();
+</script>
+</body>
+</html>
