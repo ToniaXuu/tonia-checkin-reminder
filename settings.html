@@ -8,7 +8,7 @@
   :root{
     --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128;
     --line:#30363d; --txt:#e6edf3; --dim:#8b949e; --dim2:#6e7681;
-    --blue:#58a6ff; --in:#3b82f6; --out:#f0883e;
+    --blue:#58a6ff; --dt:#3b82f6; --fs:#f0883e;
     --ok:#3fb950; --warn:#d29922; --err:#f85149;
   }
   *{box-sizing:border-box;margin:0;padding:0}
@@ -20,106 +20,122 @@
                      radial-gradient(circle at 85% 10%,rgba(240,136,62,.08),transparent 40%);
     background-attachment:fixed;
   }
-  .wrap{max-width:760px;margin:0 auto;padding:40px 24px 120px}
+  .wrap{max-width:780px;margin:0 auto;padding:36px 20px 130px}
 
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
   .back{color:var(--dim);text-decoration:none;font-size:13.5px;transition:color .2s}
   .back:hover{color:var(--blue)}
-  h1{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-bottom:6px}
-  .sub{color:var(--dim);font-size:13.5px;margin-bottom:26px}
+  h1{font-size:23px;font-weight:650;letter-spacing:-.02em;margin-bottom:6px}
+  .sub{color:var(--dim);font-size:13.5px;margin-bottom:22px}
 
-  .card{
-    background:var(--bg2);border:1px solid var(--line);border-radius:12px;
-    padding:20px;margin-bottom:16px;
-  }
-  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
-  .card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
-  .card.in{border-left:3px solid var(--in)}
-  .card.out{border-left:3px solid var(--out)}
-  .hint{font-size:12.5px;color:var(--dim2);margin-top:6px}
+  .card{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:12px}
+  .card-title{font-size:15px;font-weight:600}
+  .hint{font-size:12.5px;color:var(--dim2)}
+  label.lbl{display:block;font-size:12.5px;color:var(--dim);margin-bottom:5px}
 
-  .field{margin-bottom:14px}
-  .field:last-child{margin-bottom:0}
-  label.lbl{display:block;font-size:12.5px;color:var(--dim);margin-bottom:6px;letter-spacing:.02em}
-
-  input[type=text],input[type=password],input[type=time],input[type=number],select{
+  input[type=text],input[type=password],input[type=time],input[type=number],textarea,select{
     width:100%;background:var(--bg);color:var(--txt);
     border:1px solid var(--line);border-radius:8px;
-    padding:9px 12px;font-size:14px;font-family:inherit;
-    transition:border-color .2s,box-shadow .2s;
+    padding:8px 11px;font-size:14px;font-family:inherit;
+    transition:border-color .18s,box-shadow .18s;
   }
-  input:focus,select:focus{
-    outline:none;border-color:var(--blue);
-    box-shadow:0 0 0 3px rgba(88,166,255,.14);
+  textarea{resize:vertical;min-height:62px;line-height:1.65}
+  input:focus,textarea:focus,select:focus{
+    outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.14);
   }
-  input[type=time]{font-variant-numeric:tabular-nums;cursor:pointer}
-  select{cursor:pointer}
-  input:disabled,select:disabled{opacity:.45;cursor:not-allowed}
+  input[type=time]{font-variant-numeric:tabular-nums;cursor:pointer;width:auto;min-width:112px}
+  input:disabled,textarea:disabled,select:disabled{opacity:.45;cursor:not-allowed}
 
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
   @media(max-width:640px){.row,.row3{grid-template-columns:1fr}}
 
-  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(48,54,61,.5)}
-  .opt:last-child{border-bottom:none;padding-bottom:0}
-  .opt:first-child{padding-top:0}
-  .opt-text{font-size:13.5px}
-  .opt-desc{font-size:12px;color:var(--dim2);margin-top:2px}
+  /* 提醒卡片 */
+  .rem{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;position:relative;overflow:hidden;transition:border-color .18s}
+  .rem::before{content:'';position:absolute;inset:0 auto 0 0;width:3px}
+  .rem.has-dt::before{background:var(--dt)}
+  .rem.has-fs::before{background:var(--fs)}
+  .rem.has-both::before{background:linear-gradient(180deg,var(--dt) 50%,var(--fs) 50%)}
+  .rem.off{opacity:.5}
+  .rem:hover{border-color:#484f58}
 
-  .switch{position:relative;display:inline-block;width:42px;height:24px;flex:none}
+  .rem-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .rem-idx{font-size:11px;color:var(--dim2);font-variant-numeric:tabular-nums;flex:none;min-width:18px}
+  .rem-actions{margin-left:auto;display:flex;align-items:center;gap:6px}
+
+  .chips{display:flex;gap:6px}
+  .chip{
+    border:1px solid var(--line);background:var(--bg);color:var(--dim2);
+    padding:5px 11px;border-radius:7px;font-size:12.5px;font-family:inherit;
+    cursor:pointer;transition:all .16s;
+  }
+  .chip:hover{border-color:#484f58;color:var(--txt)}
+  .chip.on[data-ch=dingtalk]{background:rgba(59,130,246,.16);border-color:var(--dt);color:#79b8ff}
+  .chip.on[data-ch=feishu]{background:rgba(240,136,62,.16);border-color:var(--fs);color:#f0b27a}
+  .chip:disabled{opacity:.4;cursor:not-allowed}
+
+  .icon-btn{
+    border:1px solid var(--line);background:var(--bg);color:var(--dim);
+    width:30px;height:30px;border-radius:7px;cursor:pointer;
+    font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:all .16s;font-family:inherit;
+  }
+  .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err)}
+  .icon-btn:disabled{opacity:.35;cursor:not-allowed}
+
+  .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none}
   .switch input{opacity:0;width:0;height:0;position:absolute}
-  .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.22s;cursor:pointer}
-  .slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#8b949e;border-radius:50%;transition:.22s}
+  .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s;cursor:pointer}
+  .slider::before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;background:#8b949e;border-radius:50%;transition:.2s}
   .switch input:checked + .slider{background:rgba(88,166,255,.35)}
-  .switch input:checked + .slider::before{transform:translateX(18px);background:var(--blue)}
+  .switch input:checked + .slider::before{transform:translateX(17px);background:var(--blue)}
   .switch input:disabled + .slider{opacity:.4;cursor:not-allowed}
 
   .btn{
-    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
     border:1px solid var(--line);background:var(--bg3);color:var(--txt);
-    padding:9px 18px;border-radius:8px;font-size:13.5px;font-family:inherit;
+    padding:8px 16px;border-radius:8px;font-size:13.5px;font-family:inherit;
     cursor:pointer;transition:all .18s;white-space:nowrap;
   }
   .btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue)}
   .btn:disabled{opacity:.4;cursor:not-allowed}
   .btn.primary{background:var(--blue);border-color:var(--blue);color:#06121f;font-weight:600}
   .btn.primary:hover:not(:disabled){background:#79b8ff;border-color:#79b8ff;color:#06121f}
-  .btn.sm{padding:6px 13px;font-size:12.5px}
+  .btn.sm{padding:5px 12px;font-size:12.5px}
+  .btn.block{width:100%;border-style:dashed;color:var(--dim)}
+  .btn.block:hover:not(:disabled){color:var(--blue);border-color:var(--blue);border-style:dashed}
 
-  .actionbar{
-    position:fixed;left:0;right:0;bottom:0;
-    background:rgba(13,17,23,.92);backdrop-filter:blur(12px);
-    border-top:1px solid var(--line);padding:14px 24px;z-index:20;
-  }
-  .actionbar-inner{max-width:760px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar{position:fixed;left:0;right:0;bottom:0;background:rgba(13,17,23,.94);
+    backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:13px 20px;z-index:20}
+  .actionbar-inner{max-width:780px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .spacer{flex:1}
 
-  .status{
-    font-size:12.5px;padding:9px 13px;border-radius:8px;margin-bottom:14px;
-    border:1px solid var(--line);color:var(--dim);display:none;
-  }
+  .status{font-size:12.5px;padding:9px 13px;border-radius:8px;margin-bottom:14px;
+    border:1px solid var(--line);color:var(--dim);display:none}
   .status.show{display:block}
   .status.ok{color:var(--ok);border-color:rgba(63,185,80,.4);background:rgba(63,185,80,.08)}
   .status.err{color:var(--err);border-color:rgba(248,81,73,.4);background:rgba(248,81,73,.08)}
   .status.warn{color:var(--warn);border-color:rgba(210,153,34,.4);background:rgba(210,153,34,.08)}
+  .status.info{color:var(--blue);border-color:rgba(88,166,255,.4);background:rgba(88,166,255,.08)}
 
-  .warn-box{
-    background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);
-    border-radius:10px;padding:14px 16px;font-size:12.5px;color:#e3b341;
-    line-height:1.75;margin-bottom:16px;
-  }
+  .warn-box{background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.3);
+    border-radius:10px;padding:13px 15px;font-size:12.5px;color:#e3b341;line-height:1.75;margin-bottom:14px}
   .warn-box b{color:#f0c674}
   .warn-box code{background:rgba(0,0,0,.3);padding:1.5px 6px;border-radius:4px;font-size:12px;color:#e6edf3}
 
-  .badge{
-    display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
-    padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim2);
-  }
+  .badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;
+    padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--dim2)}
   .badge.on{color:var(--ok);border-color:rgba(63,185,80,.4)}
-  .badge.off{color:var(--dim2)}
   .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
 
-  .mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px}
+  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(48,54,61,.5)}
+  .opt:last-child{border-bottom:none;padding-bottom:0}
+  .opt:first-child{padding-top:0}
+  .opt-text{font-size:13.5px}
+  .opt-desc{font-size:12px;color:var(--dim2);margin-top:2px}
+
+  .empty{color:var(--dim2);font-size:13.5px;padding:24px 0;text-align:center}
   .spin{display:inline-block;animation:sp 1s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
 </style>
@@ -133,14 +149,14 @@
   </div>
 
   <h1>打卡提醒设置</h1>
-  <p class="sub">改完点保存，配置会直接提交到 GitHub 仓库，定时任务下一轮立即生效</p>
+  <p class="sub">每条提醒可单独设定时间、通道和文案 · 保存后直接提交到 GitHub，下一轮轮询即生效</p>
 
   <div class="status" id="status"></div>
 
   <div class="warn-box">
     <b>关于访问令牌</b><br>
-    保存配置需要向 GitHub 写入文件，必须使用你自己的 Personal Access Token。令牌<b>仅保存在本浏览器本地</b>，不会上传到任何第三方。<br>
-    建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:#e3b341">GitHub → Fine-grained tokens</a> 新建一个，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code> 权限，并设置较短有效期。
+    保存配置需要向 GitHub 写入文件，必须使用你自己的 Personal Access Token。令牌<b>只保存在本浏览器本地</b>，不上传任何第三方。<br>
+    建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:#e3b341">GitHub → Fine-grained tokens</a> 新建，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code>，并设置较短有效期。
   </div>
 
   <div class="card">
@@ -168,76 +184,36 @@
         <input type="password" id="conn-token" placeholder="github_pat_..." autocomplete="off">
       </div>
     </div>
-    <div class="hint">只填写一次，浏览器会记住。换设备或清缓存后需要重填。</div>
+    <div class="hint">只填一次，浏览器会记住。换设备或清缓存后需重填。</div>
   </div>
 
-  <div class="card in">
-    <div class="card-head">
-      <div class="card-title">🌅 上班打卡</div>
-      <label class="switch"><input type="checkbox" id="in-enabled" disabled><span class="slider"></span></label>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label class="lbl">提醒时间</label>
-        <input type="time" id="in-time" value="08:45" disabled>
-      </div>
-      <div class="field">
-        <label class="lbl">打卡截止</label>
-        <input type="time" id="in-deadline" value="09:00" disabled>
-      </div>
-    </div>
-    <div class="field">
-      <label class="lbl">出门清单（用 · 分隔，留空则不显示）</label>
-      <input type="text" id="chk-in" placeholder="工牌 · 电脑 · 充电器" disabled>
-    </div>
+  <div class="card-head" style="margin:22px 0 12px">
+    <div class="card-title">⏰ 提醒列表 <span class="hint" id="rem-count"></span></div>
   </div>
 
-  <div class="card out">
-    <div class="card-head">
-      <div class="card-title">🌆 下班打卡</div>
-      <label class="switch"><input type="checkbox" id="out-enabled" disabled><span class="slider"></span></label>
-    </div>
+  <div id="reminder-list"><div class="empty">未连接，暂无数据</div></div>
+
+  <button class="btn block" id="btn-add" disabled>+ 添加提醒</button>
+
+  <div class="card" style="margin-top:20px">
+    <div class="card-head"><div class="card-title">📍 位置与天气</div></div>
     <div class="row">
       <div class="field">
-        <label class="lbl">提醒时间</label>
-        <input type="time" id="out-time" value="17:45" disabled>
+        <label class="lbl">城市</label>
+        <select id="city-select" disabled></select>
       </div>
       <div class="field">
-        <label class="lbl">打卡截止</label>
-        <input type="time" id="out-deadline" value="18:00" disabled>
+        <label class="lbl">经纬度（自定义时手填）</label>
+        <div class="row" style="gap:8px">
+          <input type="text" id="city-lat" placeholder="纬度" disabled>
+          <input type="text" id="city-lon" placeholder="经度" disabled>
+        </div>
       </div>
-    </div>
-    <div class="field">
-      <label class="lbl">下班清单（用 · 分隔，留空则不显示）</label>
-      <input type="text" id="chk-out" placeholder="电脑 · 工牌 · 伞" disabled>
     </div>
   </div>
 
   <div class="card">
-    <div class="card-head">
-      <div class="card-title">📍 位置与天气</div>
-    </div>
-    <div class="field">
-      <label class="lbl">城市</label>
-      <select id="city-select" disabled></select>
-    </div>
-    <div class="row">
-      <div class="field">
-        <label class="lbl">纬度</label>
-        <input type="text" id="city-lat" disabled>
-      </div>
-      <div class="field">
-        <label class="lbl">经度</label>
-        <input type="text" id="city-lon" disabled>
-      </div>
-    </div>
-    <div class="hint">选「自定义」时可手动填经纬度，用于非预设城市。</div>
-  </div>
-
-  <div class="card">
-    <div class="card-head">
-      <div class="card-title">⚙️ 消息内容与规则</div>
-    </div>
+    <div class="card-head"><div class="card-title">⚙️ 全局规则</div></div>
     <div class="opt">
       <div>
         <div class="opt-text">自动跳过周末与法定节假日</div>
@@ -247,39 +223,32 @@
     </div>
     <div class="opt">
       <div>
-        <div class="opt-text">显示天气</div>
+        <div class="opt-text">消息附带天气</div>
         <div class="opt-desc">来自 open-meteo，免费无需密钥</div>
       </div>
       <label class="switch"><input type="checkbox" id="opt-weather" disabled><span class="slider"></span></label>
     </div>
     <div class="opt">
       <div>
-        <div class="opt-text">显示打卡倒计时</div>
-        <div class="opt-desc">如「09:00（还有 15 分钟）」</div>
-      </div>
-      <label class="switch"><input type="checkbox" id="opt-countdown" disabled><span class="slider"></span></label>
-    </div>
-    <div class="opt">
-      <div>
-        <div class="opt-text">显示本月工作日进度</div>
+        <div class="opt-text">消息附带本月工作日进度</div>
         <div class="opt-desc">如「本月工作日进度 17/22 天」</div>
       </div>
       <label class="switch"><input type="checkbox" id="opt-month" disabled><span class="slider"></span></label>
     </div>
     <div class="opt">
       <div>
-        <div class="opt-text">随机文案</div>
-        <div class="opt-desc">每次从文案库随机挑一句</div>
+        <div class="opt-text">文案留空时用随机句子填充</div>
+        <div class="opt-desc">关闭后，未填文案的提醒只显示标题和时间</div>
       </div>
       <label class="switch"><input type="checkbox" id="opt-quote" disabled><span class="slider"></span></label>
     </div>
     <div class="opt">
       <div>
         <div class="opt-text">时间容差</div>
-        <div class="opt-desc">轮询间隔内允许多少分钟的触发延迟仍算命中</div>
+        <div class="opt-desc">轮询间隔内允许多少分钟延迟仍算命中</div>
       </div>
       <input type="number" id="opt-tolerance" min="1" max="60" value="10"
-             style="width:80px;text-align:center" disabled>
+             style="width:78px;text-align:center" disabled>
     </div>
   </div>
 
@@ -288,8 +257,6 @@
 <div class="actionbar">
   <div class="actionbar-inner">
     <button class="btn primary" id="btn-save" disabled>保存到 GitHub</button>
-    <button class="btn" id="btn-test-in" disabled>测试上班提醒</button>
-    <button class="btn" id="btn-test-out" disabled>测试下班提醒</button>
     <span class="spacer"></span>
     <span class="hint" id="saved-hint" style="margin:0"></span>
   </div>
@@ -307,35 +274,32 @@ const CITY_PRESETS = [
 
 const STORE_KEY = "tonia-checkin-conn";
 const API = "https://api.github.com";
+const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书"};
 
 let remoteSha = null;
 let remoteRaw = null;
+let model = [];
 let connected = false;
 const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s)
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const EDIT_FIELDS = [
-  "in-enabled","in-time","in-deadline","chk-in",
-  "out-enabled","out-time","out-deadline","chk-out",
-  "city-select","city-lat","city-lon",
-  "opt-holidays","opt-weather","opt-countdown","opt-month","opt-quote","opt-tolerance"
-];
+const GLOBAL_FIELDS = ["city-select","city-lat","city-lon","opt-holidays","opt-weather","opt-month","opt-quote","opt-tolerance"];
 
 function setEnabled(on){
-  EDIT_FIELDS.forEach(id => { $(id).disabled = !on; });
+  connected = on;
+  GLOBAL_FIELDS.forEach(id => { $(id).disabled = !on; });
   $("btn-save").disabled = !on;
-  $("btn-test-in").disabled = !on;
-  $("btn-test-out").disabled = !on;
+  $("btn-add").disabled = !on;
+  renderReminders();
+  $("conn-badge").className = "badge " + (on ? "on" : "");
+  $("conn-badge-text").textContent = on ? "已连接" : "未连接";
 }
 
 function status(msg, kind){
   const el = $("status");
   el.textContent = msg;
   el.className = "status show" + (kind ? " " + kind : "");
-}
-
-function setBadge(on){
-  $("conn-badge").className = "badge " + (on ? "on" : "off");
-  $("conn-badge-text").textContent = on ? "已连接" : "未连接";
 }
 
 function b64encode(str){
@@ -347,8 +311,7 @@ function b64encode(str){
 
 function b64decode(b64){
   const bin = atob(b64.replace(/\s/g, ""));
-  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
 }
 
 function conn(){
@@ -361,49 +324,141 @@ function conn(){
 }
 
 function headers(withAuth){
-  const h = {
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28"
-  };
+  const h = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"};
   const c = conn();
-  if (withAuth && c.token) h["Authorization"] = "Bearer " + c.token;
+  if(withAuth && c.token) h["Authorization"] = "Bearer " + c.token;
   return h;
 }
 
-/* ── 城市下拉 ── */
+/* ── 城市 ── */
 function initCities(){
   const sel = $("city-select");
   sel.innerHTML = CITY_PRESETS
     .map(([n, la, lo]) => `<option value="${n}" data-lat="${la}" data-lon="${lo}">${n}</option>`)
     .join("") + `<option value="__custom">自定义…</option>`;
   sel.addEventListener("change", () => {
-    const opt = sel.selectedOptions[0];
     if(sel.value !== "__custom"){
-      $("city-lat").value = opt.dataset.lat;
-      $("city-lon").value = opt.dataset.lon;
+      $("city-lat").value = sel.selectedOptions[0].dataset.lat;
+      $("city-lon").value = sel.selectedOptions[0].dataset.lon;
     }
   });
 }
 
-/* ── 加载配置 ── */
+/* ── 渲染提醒列表 ── */
+function remCard(r, i){
+  const chs = r.channels || ["dingtalk"];
+  const cls = chs.length > 1 ? "has-both" : (chs[0] === "feishu" ? "has-fs" : "has-dt");
+  const off = r.enabled === false ? " off" : "";
+  const chip = k => `<button class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${connected ? "" : "disabled"}>${CH_LABEL[k]}</button>`;
+
+  return `<div class="rem ${cls}${off}" data-idx="${i}">
+    <div class="rem-top">
+      <span class="rem-idx">${i + 1}</span>
+      <input type="time" data-field="time" value="${esc(r.time || "17:00")}" ${connected ? "" : "disabled"}>
+      <div class="chips">${chip("dingtalk")}${chip("feishu")}</div>
+      <div class="rem-actions">
+        <button class="btn sm" data-act="test" ${connected ? "" : "disabled"}>测试</button>
+        <label class="switch"><input type="checkbox" data-field="enabled" ${r.enabled === false ? "" : "checked"} ${connected ? "" : "disabled"}><span class="slider"></span></label>
+        <button class="icon-btn" data-act="del" title="删除" ${connected ? "" : "disabled"}>×</button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="lbl">标题</label>
+        <input type="text" data-field="label" value="${esc(r.label || "打卡提醒")}" placeholder="下班打卡" ${connected ? "" : "disabled"}>
+      </div>
+      <div class="field">
+        <label class="lbl">图标</label>
+        <input type="text" data-field="emoji" value="${esc(r.emoji || "🔔")}" placeholder="🔔" ${connected ? "" : "disabled"}>
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <label class="lbl">提示文案（留空则只用标题+时间）</label>
+      <textarea data-field="message" placeholder="该打卡了，别忘了。" ${connected ? "" : "disabled"}>${esc(r.message || "")}</textarea>
+    </div>
+  </div>`;
+}
+
+function renderReminders(){
+  const box = $("reminder-list");
+  if(!connected){
+    box.innerHTML = '<div class="empty">未连接，暂无数据</div>';
+    $("rem-count").textContent = "";
+    return;
+  }
+  if(!model.length){
+    box.innerHTML = '<div class="empty">还没有提醒，点下面的「添加提醒」开始</div>';
+    $("rem-count").textContent = "";
+    return;
+  }
+  box.innerHTML = model.map(remCard).join("");
+  $("rem-count").textContent = `共 ${model.length} 条`;
+}
+
+function bindList(){
+  const box = $("reminder-list");
+
+  box.addEventListener("input", e => {
+    const card = e.target.closest(".rem");
+    const f = e.target.dataset.field;
+    if(!card || !f) return;
+    const i = +card.dataset.idx;
+    model[i][f] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+    if(f === "enabled"){
+      card.classList.toggle("off", !e.target.checked);
+    }
+  });
+
+  box.addEventListener("click", e => {
+    const card = e.target.closest(".rem");
+    if(!card) return;
+    const i = +card.dataset.idx;
+    const btn = e.target.closest("[data-act]");
+    if(!btn) return;
+    const act = btn.dataset.act;
+
+    if(act === "ch"){
+      const k = btn.dataset.ch;
+      const cur = model[i].channels || ["dingtalk"];
+      let next = cur.includes(k) ? cur.filter(x => x !== k) : cur.concat(k);
+      if(!next.length){ status("每条提醒至少要保留一个通道", "warn"); return; }
+      model[i].channels = next.sort();
+      renderReminders();
+    }
+
+    if(act === "del"){
+      if(!confirm(`确定删除第 ${i + 1} 条提醒（${model[i].time || "未设时间"}）？`)) return;
+      model.splice(i, 1);
+      renderReminders();
+      status("已从列表移除，记得点保存", "info");
+    }
+
+    if(act === "test"){
+      const r = model[i];
+      if(!r.id){ status("这条提醒还没有 ID，请先保存一次", "warn"); return; }
+      testRemind(r);
+    }
+  });
+}
+
+/* ── 加载 / 保存 ── */
 async function loadConfig(){
   const c = conn();
   if(!c.owner || !c.repo){ status("请先填写用户名和仓库名", "err"); return; }
   if(!c.token){ status("请填写访问令牌", "err"); return; }
 
-  status("正在验证令牌…");
+  status("正在验证令牌…", "info");
   try{
     const u = await fetch(API + "/user", {headers: headers(true)});
     if(!u.ok) throw new Error(u.status === 401 ? "令牌无效或已过期" : "验证失败 " + u.status);
     const user = await u.json();
-    status("令牌有效（" + user.login + "），正在读取 config.json…");
+    status("令牌有效（" + user.login + "），正在读取 config.json…", "info");
   }catch(e){
     status("令牌验证失败：" + e.message, "err"); return;
   }
 
   try{
-    const url = `${API}/repos/${c.owner}/${c.repo}/contents/config.json?ref=${c.branch}`;
-    const r = await fetch(url, {headers: headers(true)});
+    const r = await fetch(`${API}/repos/${c.owner}/${c.repo}/contents/config.json?ref=${c.branch}`, {headers: headers(true)});
     if(!r.ok) throw new Error(r.status === 404 ? "仓库或 config.json 不存在" : "读取失败 " + r.status);
     const data = await r.json();
     remoteSha = data.sha;
@@ -412,40 +467,23 @@ async function loadConfig(){
     status("读取配置失败：" + e.message, "err"); return;
   }
 
-  fillForm(remoteRaw);
-  connected = true;
+  model = (remoteRaw.reminders || []).map(r => Object.assign({}, r));
+  fillGlobals(remoteRaw);
   setEnabled(true);
-  setBadge(true);
   localStorage.setItem(STORE_KEY, JSON.stringify(conn()));
-  status("已连接，可以编辑并保存了 ✓", "ok");
+  status(`已连接 · 读取到 ${model.length} 条提醒，可以编辑了`, "ok");
 }
 
-/* ── 回填表单 ── */
-function fillForm(cfg){
-  const s = cfg.schedule || {};
-  const o = cfg.options || {};
-  const city = cfg.city || {};
-
-  $("in-enabled").checked   = (s["in"]  || {}).enabled !== false;
-  $("in-time").value        = (s["in"]  || {}).time || "08:45";
-  $("in-deadline").value    = (s["in"]  || {}).deadline || "09:00";
-  $("out-enabled").checked  = (s["out"] || {}).enabled !== false;
-  $("out-time").value       = (s["out"] || {}).time || "17:45";
-  $("out-deadline").value   = (s["out"] || {}).deadline || "18:00";
-
-  $("chk-in").value  = (o.checklist_in  || []).join(" · ");
-  $("chk-out").value = (o.checklist_out || []).join(" · ");
-
-  $("opt-holidays").checked  = o.skip_holidays !== false;
-  $("opt-weather").checked   = o.include_weather !== false;
-  $("opt-countdown").checked = o.include_countdown !== false;
-  $("opt-month").checked     = o.include_month_stats !== false;
-  $("opt-quote").checked     = o.include_quote !== false;
-  $("opt-tolerance").value   = o.tolerance_minutes || 10;
+function fillGlobals(cfg){
+  const o = cfg.options || {}, city = cfg.city || {};
+  $("opt-holidays").checked = o.skip_holidays !== false;
+  $("opt-weather").checked  = o.include_weather === true;
+  $("opt-month").checked    = o.include_month_stats === true;
+  $("opt-quote").checked    = o.include_quote === true;
+  $("opt-tolerance").value  = o.tolerance_minutes || 10;
 
   const sel = $("city-select");
-  const known = CITY_PRESETS.some(([n]) => n === city.name);
-  if(known){
+  if(CITY_PRESETS.some(([n]) => n === city.name)){
     sel.value = city.name;
     $("city-lat").value = city.lat;
     $("city-lon").value = city.lon;
@@ -456,60 +494,54 @@ function fillForm(cfg){
   }
 }
 
-/* ── 从表单构建 config ── */
 function buildConfig(){
   const base = remoteRaw ? JSON.parse(JSON.stringify(remoteRaw)) : {};
   const sel = $("city-select");
   const manual = sel.value === "__custom";
-
   const prevName = (base.city && base.city.name) || "";
+
+  const lat = parseFloat($("city-lat").value), lon = parseFloat($("city-lon").value);
+  if(isNaN(lat) || isNaN(lon)) throw new Error("经纬度必须是数字");
+
   base.city = {
     name: manual ? (prevName || "自定义") : sel.value,
-    lat: parseFloat($("city-lat").value),
-    lon: parseFloat($("city-lon").value),
-    timezone: "Asia/Shanghai"
+    lat, lon, timezone: "Asia/Shanghai"
   };
   if(manual){
     const nm = prompt("给这个地点起个名字（会显示在提醒消息里）：", prevName === "自定义" ? "" : prevName);
     if(nm && nm.trim()) base.city.name = nm.trim();
   }
-  if(isNaN(base.city.lat) || isNaN(base.city.lon)){
-    throw new Error("经纬度必须是数字");
-  }
 
-  base.schedule = base.schedule || {};
-  base.schedule["in"] = Object.assign({}, base.schedule["in"], {
-    enabled: $("in-enabled").checked,
-    time: $("in-time").value,
-    deadline: $("in-deadline").value,
-    label: "上班打卡",
-    emoji: "🌅"
+  const clean = model.map(r => {
+    const o = {
+      id: r.id || ("rm-" + Math.random().toString(36).slice(2, 9)),
+      enabled: r.enabled !== false,
+      channels: (r.channels && r.channels.length) ? r.channels : ["dingtalk"],
+      time: r.time || "17:00",
+      label: (r.label || "打卡提醒").trim(),
+      emoji: (r.emoji || "🔔").trim(),
+      message: (r.message || "").trim()
+    };
+    return o;
   });
-  base.schedule["out"] = Object.assign({}, base.schedule["out"], {
-    enabled: $("out-enabled").checked,
-    time: $("out-time").value,
-    deadline: $("out-deadline").value,
-    label: "下班打卡",
-    emoji: "🌆"
-  });
+  clean.sort((a, b) => a.time.localeCompare(b.time));
+  base.reminders = clean;
 
-  const split = s => s.split("·").map(x => x.trim()).filter(Boolean);
   base.options = Object.assign({}, base.options, {
     skip_holidays: $("opt-holidays").checked,
     include_weather: $("opt-weather").checked,
-    include_countdown: $("opt-countdown").checked,
     include_month_stats: $("opt-month").checked,
     include_quote: $("opt-quote").checked,
-    tolerance_minutes: parseInt($("opt-tolerance").value, 10) || 10,
-    checklist_in: split($("chk-in").value),
-    checklist_out: split($("chk-out").value)
+    tolerance_minutes: parseInt($("opt-tolerance").value, 10) || 10
   });
-
+  delete base.schedule;
   delete base.options.max_late_minutes;
+  delete base.options.include_countdown;
+  delete base.options.checklist_in;
+  delete base.options.checklist_out;
   return base;
 }
 
-/* ── 保存 ── */
 async function save(){
   let cfg;
   try{ cfg = buildConfig(); }
@@ -517,11 +549,10 @@ async function save(){
 
   const c = conn();
   $("btn-save").disabled = true;
-  status("正在提交到 GitHub…");
+  status("正在提交到 GitHub…", "info");
 
   try{
-    const url = `${API}/repos/${c.owner}/${c.repo}/contents/config.json`;
-    const r = await fetch(url, {
+    const r = await fetch(`${API}/repos/${c.owner}/${c.repo}/contents/config.json`, {
       method: "PUT",
       headers: Object.assign({"Content-Type": "application/json"}, headers(true)),
       body: JSON.stringify({
@@ -531,19 +562,17 @@ async function save(){
         branch: c.branch
       })
     });
-
     if(!r.ok){
       const err = await r.json().catch(() => ({}));
       throw new Error(err.message || ("提交失败 " + r.status));
     }
-
     const res = await r.json();
     remoteSha = res.content.sha;
     remoteRaw = cfg;
-
-    const t = new Date().toLocaleTimeString("zh-CN", {hour12: false});
-    $("saved-hint").textContent = "已保存 " + t;
-    status("✅ 已提交到 GitHub。定时任务下一轮（≤10 分钟）就会用新配置。", "ok");
+    model = cfg.reminders.map(x => Object.assign({}, x));
+    renderReminders();
+    $("saved-hint").textContent = "已保存 " + new Date().toLocaleTimeString("zh-CN", {hour12: false});
+    status(`✅ 已提交到 GitHub（${cfg.reminders.length} 条提醒）。定时任务下一轮（≤10 分钟）就会用新配置。`, "ok");
   }catch(e){
     status("保存失败：" + e.message, "err");
   }finally{
@@ -551,22 +580,21 @@ async function save(){
   }
 }
 
-/* ── 手动测试 ── */
-async function testRemind(type){
+async function testRemind(r){
   const c = conn();
-  status("正在触发 " + (type === "in" ? "上班" : "下班") + "提醒测试…");
+  status(`正在触发测试：${r.label} ${r.time} …`, "info");
   try{
     const url = `${API}/repos/${c.owner}/${c.repo}/actions/workflows/checkin-reminder.yml/dispatches`;
-    const r = await fetch(url, {
+    const resp = await fetch(url, {
       method: "POST",
       headers: Object.assign({"Content-Type": "application/json"}, headers(true)),
-      body: JSON.stringify({ref: c.branch, inputs: {type: type, force: true}})
+      body: JSON.stringify({ref: c.branch, inputs: {id: r.id, force: true}})
     });
-    if(r.status === 204){
-      status("✅ 已触发，约 20~60 秒后消息会到钉钉和飞书。可到 Actions 页看日志。", "ok");
+    if(resp.status === 204){
+      status("✅ 已触发，约 20~60 秒后消息送达。若刚改过配置，请先点「保存到 GitHub」再测试。", "ok");
     }else{
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.message || ("触发失败 " + r.status));
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.message || ("触发失败 " + resp.status));
     }
   }catch(e){
     status("触发失败：" + e.message, "err");
@@ -575,7 +603,25 @@ async function testRemind(type){
 
 /* ── 启动 ── */
 initCities();
+bindList();
 setEnabled(false);
+
+$("btn-add").addEventListener("click", () => {
+  model.push({
+    id: "rm-" + Math.random().toString(36).slice(2, 9),
+    enabled: true,
+    channels: ["dingtalk"],
+    time: "17:00",
+    label: "打卡提醒",
+    emoji: "🔔",
+    message: ""
+  });
+  renderReminders();
+  status("已添加，改完记得点保存", "info");
+});
+
+$("btn-connect").addEventListener("click", loadConfig);
+$("btn-save").addEventListener("click", save);
 
 const saved = localStorage.getItem(STORE_KEY);
 if(saved){
@@ -590,11 +636,6 @@ if(saved){
 }else{
   status("填写仓库信息后点「连接并加载」。", "warn");
 }
-
-$("btn-connect").addEventListener("click", loadConfig);
-$("btn-save").addEventListener("click", save);
-$("btn-test-in").addEventListener("click", () => testRemind("in"));
-$("btn-test-out").addEventListener("click", () => testRemind("out"));
 </script>
 </body>
 </html>

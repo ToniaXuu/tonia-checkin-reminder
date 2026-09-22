@@ -8,22 +8,63 @@
     "timezone": "Asia/Shanghai"
   },
 
-  "schedule": {
-    "in": {
+  "reminders": [
+    {
+      "id": "dt-1705",
       "enabled": true,
-      "time": "08:45",
-      "deadline": "09:00",
-      "label": "上班打卡",
-      "emoji": "🌅"
-    },
-    "out": {
-      "enabled": true,
-      "time": "17:45",
-      "deadline": "18:00",
+      "channels": ["dingtalk"],
+      "time": "17:05",
       "label": "下班打卡",
-      "emoji": "🌆"
+      "emoji": "🕔",
+      "message": "五点零五了，顺手把卡打了吧，别留到最后一刻。"
+    },
+    {
+      "id": "dt-1720",
+      "enabled": true,
+      "channels": ["dingtalk"],
+      "time": "17:20",
+      "label": "下班打卡",
+      "emoji": "⏰",
+      "message": "提醒一下，还没打卡的话现在就去。"
+    },
+    {
+      "id": "dt-1740",
+      "enabled": true,
+      "channels": ["dingtalk"],
+      "time": "17:40",
+      "label": "下班打卡",
+      "emoji": "🚨",
+      "message": "最后一次提醒 —— 今天要是还没打卡，现在就补。"
+    },
+
+    {
+      "id": "fs-1715",
+      "enabled": true,
+      "channels": ["feishu"],
+      "time": "17:15",
+      "label": "下班打卡",
+      "emoji": "🕔",
+      "message": "该打卡了，别忘了。"
+    },
+    {
+      "id": "fs-1730",
+      "enabled": true,
+      "channels": ["feishu"],
+      "time": "17:30",
+      "label": "下班打卡",
+      "emoji": "⏰",
+      "message": "再提醒一次，记得打卡。"
+    },
+    {
+      "id": "fs-1800",
+      "enabled": true,
+      "channels": ["feishu"],
+      "time": "18:00",
+      "label": "下班打卡",
+      "emoji": "🚨",
+      "message": "六点了，最后确认一下有没有打卡。"
     }
-  },
+  ],
 
   "channels": {
     "dingtalk": {
@@ -41,11 +82,8 @@
   "options": {
     "skip_holidays": true,
     "tolerance_minutes": 10,
-    "include_weather": true,
-    "include_countdown": true,
-    "include_month_stats": true,
-    "include_quote": true,
-    "checklist_in": ["工牌", "电脑", "充电器"],
-    "checklist_out": ["电脑", "工牌", "伞"]
+    "include_weather": false,
+    "include_month_stats": false,
+    "include_quote": false
   }
 }

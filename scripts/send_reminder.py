@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-tonia-checkin-reminder — 每日上下班打卡提醒（钉钉 + 飞书双通道）
+tonia-checkin-reminder — 打卡提醒推送（支持多条提醒 · 多通道）
 ==================================================================
 
-定时器（cron-job.org 精确触发 GitHub Actions）调用本脚本，
-自动判断工作日 + 组装消息 + 双通道推送。
+配置来自 config.json 的 reminders 数组，每条提醒有自己的：
+  时间 / 通道 / 文案 / 开关 / ID
+
+轮询模式：定时器只负责「每隔几分钟叫醒脚本一次」，
+发不发由脚本判断 —— 当前时间是否落在某条提醒的 [设定时间, +容差] 窗口内。
+因此网页上改时间与文案即可立即生效，无需改动定时器。
 
 用法:
-    python scripts/send_reminder.py                 # auto：按当前时间判断上/下班
-    python scripts/send_reminder.py in              # 强制上班提醒
-    python scripts/send_reminder.py out             # 强制下班提醒
-    python scripts/send_reminder.py in --dry-run    # 只打印，不发送、不写日志
-    python scripts/send_reminder.py in --force      # 忽略工作日判断（方便测试）
+    python scripts/send_reminder.py --list              # 列出所有提醒与当前窗口状态
+    python scripts/send_reminder.py                     # auto：按时间窗口判断该发哪些
+    python scripts/send_reminder.py --dry-run           # 只打印，不发送、不写日志
+    python scripts/send_reminder.py --id dt-1705        # 强制处理指定提醒（忽略窗口）
+    python scripts/send_reminder.py --id dt-1705 --force  # 同时忽略当日去重
 
 环境变量:
     DINGTALK_WEBHOOK / DINGTALK_SECRET
@@ -81,7 +85,7 @@ def date_cn(d):
 
 
 def parse_hhmm(s):
-    hh, mm = s.split(":")
+    hh, mm = str(s).split(":")
     return int(hh), int(mm)
 
 
@@ -104,12 +108,10 @@ def fetch_weather(city):
             return None
         code = d["weathercode"][0]
         rain = (d.get("precipitation_probability_max") or [None])[0]
-        return {
-            "weather": WEATHER_MAP.get(code, "🌡 未知"),
-            "temp_min": int(d["temperature_2m_min"][0]),
-            "temp_max": int(d["temperature_2m_max"][0]),
-            "rain": rain,
-        }
+        line = f"{WEATHER_MAP.get(code, '🌡 未知')} {int(d['temperature_2m_min'][0])}°C ~ {int(d['temperature_2m_max'][0])}°C"
+        if rain is not None and rain >= 40:
+            line += f"　☔ 降水概率 {rain}%"
+        return line
     except Exception as e:
         print(f"  ⚠️ 天气获取失败：{e}")
         return None
@@ -128,18 +130,18 @@ def _dingtalk_url(webhook, secret):
 
 
 def send_dingtalk(webhook, secret, title, text, dry=False):
-    payload = {"msgtype": "markdown", "markdown": {"title": title, "text": text}}
     if dry:
-        print("  🧪 [钉钉] 已跳过实际发送（dry-run）")
+        print("     🧪 [钉钉] dry-run，未实际发送")
         return True
     try:
+        payload = {"msgtype": "markdown", "markdown": {"title": title, "text": text}}
         r = requests.post(_dingtalk_url(webhook, secret), json=payload, timeout=15).json()
         if r.get("errcode") == 0:
-            print("  ✅ 钉钉推送成功")
+            print("     ✅ 钉钉推送成功")
             return True
-        print(f"  ❌ 钉钉推送失败：{r.get('errmsg')}")
+        print(f"     ❌ 钉钉推送失败：errcode={r.get('errcode')} {r.get('errmsg')}")
     except Exception as e:
-        print(f"  ❌ 钉钉推送异常：{e}")
+        print(f"     ❌ 钉钉推送异常：{e}")
     return False
 
 
@@ -154,166 +156,211 @@ def _feishu_sign(secret, ts):
 
 
 def send_feishu(webhook, secret, card, dry=False):
-    payload = {"msg_type": "interactive", "card": card}
-    if secret:
-        ts = str(int(time.time()))
-        payload["timestamp"] = ts
-        payload["sign"] = _feishu_sign(secret, ts)
     if dry:
-        print("  🧪 [飞书] 已跳过实际发送（dry-run）")
+        print("     🧪 [飞书] dry-run，未实际发送")
         return True
     try:
+        payload = {"msg_type": "interactive", "card": card}
+        if secret:
+            ts = str(int(time.time()))
+            payload["timestamp"] = ts
+            payload["sign"] = _feishu_sign(secret, ts)
         r = requests.post(webhook, json=payload, timeout=15).json()
         if r.get("code") == 0 or r.get("StatusCode") == 0:
-            print("  ✅ 飞书推送成功")
+            print("     ✅ 飞书推送成功")
             return True
-        print(f"  ❌ 飞书推送失败：{r.get('msg') or r}")
+        print(f"     ❌ 飞书推送失败：{r.get('msg') or r}")
     except Exception as e:
-        print(f"  ❌ 飞书推送异常：{e}")
+        print(f"     ❌ 飞书推送异常：{e}")
     return False
 
 
 # ────────────────────────── 消息组装 ──────────────────────────
 
-def build_context(cfg, rtype, sc, now, work_desc):
-    """把消息内容组装成一份上下文，钉钉 / 飞书共用。"""
-    opts = cfg.get("options", {})
-    city = cfg.get("city", {})
-    today = date_cn(now)
-    time_line = now.strftime("%H:%M")
+def build_context(cfg, rem, now):
+    """把单条提醒组装成渲染上下文，钉钉 / 飞书共用。"""
+    opts = cfg.get("options") or {}
+    city = cfg.get("city") or {}
 
-    # 截止时间与倒计时
-    dl_h, dl_m = parse_hhmm(sc["deadline"])
-    dl = now.replace(hour=dl_h, minute=dl_m, second=0, microsecond=0)
-    delta_min = (dl - now).total_seconds() / 60
-    if delta_min > 1:
-        cd = f"还有 {int(round(delta_min))} 分钟"
-    elif delta_min > -1:
-        cd = "就是现在"
-    else:
-        cd = f"已过 {int(round(-delta_min))} 分钟"
-    deadline_line = f"{sc['deadline']}（{cd}）" if opts.get("include_countdown", True) else sc["deadline"]
+    # 正文：优先用自定义文案；为空时才回退到随机文案
+    main = (rem.get("message") or "").strip()
+    if not main and opts.get("include_quote", False):
+        pool = load_json(QUOTES_FILE, {}) or {}
+        lst = (pool.get("out") or []) + (pool.get("in") or [])
+        if lst:
+            main = random.choice(lst)
 
-    # 天气
-    weather_line = "—"
-    if opts.get("include_weather", True):
+    weather_line = ""
+    if opts.get("include_weather", False):
         w = fetch_weather(city)
         if w:
-            weather_line = f"{w['weather']} {w['temp_min']}°C ~ {w['temp_max']}°C"
-            if w.get("rain") is not None and w["rain"] >= 40:
-                weather_line += f"　☔ 降水概率 {w['rain']}%"
+            weather_line = w
 
-    # 出门清单
-    checklist = opts.get(f"checklist_{rtype}") or []
-    checklist_line = " · ".join(checklist) if checklist else ""
-
-    # 月度工作日进度
     stats_line = ""
-    if opts.get("include_month_stats", True):
+    if opts.get("include_month_stats", False):
         total, passed = month_workdays(now.year, now.month)
         if total:
             stats_line = f"本月工作日进度 {passed}/{total} 天"
 
-    # 随机文案
-    quote = ""
-    if opts.get("include_quote", True):
-        pool = load_json(QUOTES_FILE, {}) or {}
-        lst = pool.get(rtype) or []
-        if lst:
-            quote = random.choice(lst)
-
     return {
-        "date_cn": today,
-        "time": time_line,
-        "deadline_line": deadline_line,
+        "date_cn": date_cn(now),
+        "time": now.strftime("%H:%M"),
+        "label": rem.get("label") or "打卡提醒",
+        "emoji": rem.get("emoji") or "🔔",
+        "main": main,
         "city": city.get("name", ""),
         "weather_line": weather_line,
-        "checklist_line": checklist_line,
         "stats_line": stats_line,
-        "quote": quote,
-        "work_desc": work_desc,
-        "label": sc["label"],
-        "emoji": sc.get("emoji", "🔔"),
-        "rtype": rtype,
     }
 
 
-def build_dingtalk(c, cfg):
+def build_dingtalk(c):
     title = f"{c['emoji']} {c['label']}提醒 | {c['date_cn']}"
 
     parts = [
         f"### {c['emoji']} {c['label']}提醒",
         "",
-        f"**{c['date_cn']}** · {c['time']}",
-        "",
-        "---",
-        "",
-        f"**⏰ 打卡截止**　{c['deadline_line']}",
+        f"{c['date_cn']} · {c['time']}",
     ]
-    if c["weather_line"] != "—":
-        parts += ["", f"**☁️ {c['city']}天气**　{c['weather_line']}"]
-    if c["checklist_line"]:
-        parts += ["", f"**🎒 出门清单**　{c['checklist_line']}"]
 
+    if c["main"]:
+        parts += ["", "---", "", f"**{c['main']}**"]
+
+    extras = []
+    if c["weather_line"]:
+        extras.append(f"☁️ {c['city']}天气　{c['weather_line']}")
     if c["stats_line"]:
-        parts += ["", "---", "", f"▸ {c['stats_line']}"]
-
-    if c["quote"]:
-        parts += ["", f"> {c['quote']}"]
+        extras.append(f"▸ {c['stats_line']}")
+    if extras:
+        parts += ["", "---", ""] + ["  \n".join(extras)]
 
     return title, "\n".join(parts)
 
 
-def build_feishu(c, cfg):
-    template = "blue" if c["rtype"] == "in" else "orange"
+def build_feishu(c):
     title = f"{c['emoji']} {c['label']}提醒 | {c['date_cn']}"
 
-    fields = [
-        {"is_short": True, "text": {"tag": "lark_md", "content": f"**📅 日期**\n{c['date_cn']}"}},
-        {"is_short": True, "text": {"tag": "lark_md", "content": f"**🕐 触发**\n{c['time']}"}},
-        {"is_short": True, "text": {"tag": "lark_md", "content": f"**⏰ 打卡截止**\n{c['deadline_line']}"}},
+    elements = [
+        {"tag": "div", "fields": [
+            {"is_short": True, "text": {"tag": "lark_md", "content": f"**📅 日期**\n{c['date_cn']}"}},
+            {"is_short": True, "text": {"tag": "lark_md", "content": f"**🕐 时间**\n{c['time']}"}},
+        ]}
     ]
-    if c["weather_line"] != "—":
-        fields.append({"is_short": True, "text": {"tag": "lark_md", "content": f"**☁️ {c['city']}天气**\n{c['weather_line']}"}})
 
-    elements = [{"tag": "div", "fields": fields}]
-
-    if c["checklist_line"]:
+    if c["main"]:
         elements += [
             {"tag": "hr"},
-            {"tag": "div", "text": {"tag": "lark_md", "content": f"**🎒 出门清单**　{c['checklist_line']}"}},
+            {"tag": "div", "text": {"tag": "lark_md", "content": c["main"]}},
         ]
+
+    extras = []
+    if c["weather_line"]:
+        extras.append(f"☁️ {c['city']}天气　{c['weather_line']}")
     if c["stats_line"]:
+        extras.append(f"▸ {c['stats_line']}")
+    if extras:
         elements += [
             {"tag": "hr"},
-            {"tag": "div", "text": {"tag": "lark_md", "content": f"▸ {c['stats_line']}"}},
-        ]
-    if c["quote"]:
-        elements += [
-            {"tag": "hr"},
-            {"tag": "div", "text": {"tag": "lark_md", "content": f"<font color='grey'>{c['quote']}</font>"}},
+            {"tag": "div", "text": {"tag": "lark_md", "content": "\n".join(extras)}},
         ]
 
     card = {
         "config": {"wide_screen_mode": True, "enable_forward": True},
-        "header": {"template": template, "title": {"tag": "plain_text", "content": title}},
+        "header": {"template": "orange", "title": {"tag": "plain_text", "content": title}},
         "elements": elements,
     }
     return title, card
 
 
-# ────────────────────────── 日志 ──────────────────────────
+# ────────────────────────── 通道分发 ──────────────────────────
 
-def append_log(rtype, channels):
+def dispatch(cfg, rem, ctx, dry=False):
+    """按 reminder.channels 逐个通道发送，返回成功通道列表。"""
+    ch_cfg = cfg.get("channels") or {}
+    want = rem.get("channels") or ["dingtalk"]
+    sent = []
+
+    for name in want:
+        cc = ch_cfg.get(name) or {}
+        if not cc.get("enabled", True):
+            print(f"     ⏭️ 通道 {name} 已在配置中关闭")
+            continue
+
+        wh = os.environ.get(cc.get("webhook_env", ""), "")
+        sec = os.environ.get(cc.get("secret_env", ""), "")
+        if not wh:
+            print(f"     ⚠️ 未配置环境变量 {cc.get('webhook_env')}，跳过 {name}")
+            continue
+
+        if name == "dingtalk":
+            title, text = build_dingtalk(ctx)
+            print(f"     📤 [钉钉] {title}")
+            if send_dingtalk(wh, sec, title, text, dry=dry) and not dry:
+                sent.append("dingtalk")
+        elif name == "feishu":
+            title, card = build_feishu(ctx)
+            print(f"     📤 [飞书] {title}")
+            if send_feishu(wh, sec, card, dry=dry) and not dry:
+                sent.append("feishu")
+        else:
+            print(f"     ⚠️ 未知通道：{name}")
+
+    return sent
+
+
+# ────────────────────────── 窗口判定与去重 ──────────────────────────
+
+def iter_with_delta(reminders, now, tolerance):
+    """产出 (reminder, delta分钟)；delta 为当前时间相对该提醒设定时间的差值。"""
+    for rem in reminders:
+        if not rem.get("enabled", True):
+            continue
+        t = rem.get("time")
+        if not t:
+            continue
+        try:
+            th, tm = parse_hhmm(t)
+        except Exception:
+            print(f"  ⚠️ [{rem.get('id')}] 时间格式非法：{t}")
+            continue
+        target = now.replace(hour=th, minute=tm, second=0, microsecond=0)
+        yield rem, (now - target).total_seconds() / 60
+
+
+def resolve_due(cfg, now, tolerance):
+    """
+    返回 [(reminder, delta), ...] —— 当前命中时间窗口的提醒（按时间先后排序）。
+    窗口 = [设定时间 - 1分钟, 设定时间 + 容差]，-1 分钟用于容忍秒级时钟误差。
+    """
+    due = []
+    for rem, delta in iter_with_delta(cfg.get("reminders") or [], now, tolerance):
+        if -1 <= delta <= tolerance:
+            due.append((rem, delta))
+    due.sort(key=lambda x: x[1])
+    return due
+
+
+def sent_today(rid, day):
+    """查询当天是否已推送过该条提醒（按 ID 去重）。返回 ts 或 None。"""
+    log = load_json(LOG_FILE, {"history": []}) or {}
+    for h in log.get("history", []):
+        if h.get("date") == day and h.get("rid") == rid:
+            return h.get("ts", "")
+    return None
+
+
+def append_log(rem, channels):
     log = load_json(LOG_FILE, {"history": []}) or {"history": []}
     log.setdefault("history", [])
     log["history"].append({
         "date": now_cn().strftime("%Y-%m-%d"),
-        "type": rtype,
+        "rid": rem.get("id"),
+        "time": rem.get("time"),
+        "label": rem.get("label", ""),
         "ts": now_cn().isoformat(timespec="seconds"),
         "channels": channels,
     })
-    log["history"] = log["history"][-400:]
+    log["history"] = log["history"][-500:]
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(log, f, ensure_ascii=False, indent=2)
@@ -321,143 +368,101 @@ def append_log(rtype, channels):
 
 # ────────────────────────── 主流程 ──────────────────────────
 
-def resolve_type(arg, cfg, now, tolerance, force=False):
-    """
-    决定本次该发哪种提醒。
-
-    返回 (rtype, reason)，rtype = 'in' | 'out' | None
-    None 表示当前不在任何提醒时间窗口内 —— 这是「轮询模式」的核心：
-    定时器每 N 分钟 ping 一次，只有落在 [设定时间, 设定时间+容差] 内才真正发送，
-    因此网页上改时间即可立即生效，无需改动定时器。
-    """
-    if arg in ("in", "out"):
-        return arg, "手动指定类型"
-
-    hits, passed = [], []
-    for k in ("in", "out"):
-        sc = (cfg.get("schedule") or {}).get(k) or {}
-        if not sc.get("enabled", True):
-            continue
-        th, tm = parse_hhmm(sc["time"])
-        target = now.replace(hour=th, minute=tm, second=0, microsecond=0)
-        delta = (now - target).total_seconds() / 60
-        if 0 <= delta <= tolerance:
-            hits.append((delta, k))
-        elif delta > 0:
-            passed.append((delta, k))
-
-    if hits:
-        hits.sort()
-        delta, k = hits[0]
-        return k, f"命中 {k} 时间窗口（距设定时间 {int(round(delta))} 分钟）"
-
-    if force and passed:
-        passed.sort()
-        delta, k = passed[0]
-        return k, f"--force 强制补发（已过设定时间 {int(round(delta))} 分钟）"
-
-    return None, f"当前不在提醒窗口内（容差 {tolerance} 分钟）"
-
-
-def sent_today(rtype, day):
-    """查询当天是否已推送过该类型提醒，用于轮询模式去重。返回 ts 或 None。"""
-    log = load_json(LOG_FILE, {"history": []}) or {}
-    for h in log.get("history", []):
-        if h.get("date") == day and h.get("type") == rtype:
-            return h.get("ts", "")
-    return None
+def cmd_list(cfg, now, tolerance):
+    reminders = cfg.get("reminders") or []
+    print(f"🕐 当前 {now.strftime('%Y-%m-%d %H:%M:%S')}（UTC+8）· 容差 {tolerance} 分钟\n")
+    if not reminders:
+        print("  （config.json 里没有任何提醒）")
+        return 0
+    for rem, delta in iter_with_delta(reminders, now, tolerance):
+        in_win = -1 <= delta <= tolerance
+        flag = "  ★ 正在窗口内" if in_win else ""
+        print(f"  [{rem.get('id')}] {rem.get('time')}  {'/'.join(rem.get('channels') or [])}{flag}")
+        print(f"       {rem.get('message') or '（无自定义文案）'}")
+    off = [r.get("id") for r in reminders if not r.get("enabled", True)]
+    if off:
+        print(f"\n  已停用：{', '.join(off)}")
+    return 0
 
 
 def main():
     ap = argparse.ArgumentParser(description="打卡提醒推送")
-    ap.add_argument("type", nargs="?", default="auto", choices=["in", "out", "auto"])
+    ap.add_argument("--id", dest="rid", default=None, help="只处理指定 ID 的提醒（忽略时间窗口）")
     ap.add_argument("--dry-run", action="store_true", help="只打印不发送、不写日志")
-    ap.add_argument("--force", action="store_true", help="忽略工作日判断")
+    ap.add_argument("--force", action="store_true", help="忽略工作日判断与当日去重")
+    ap.add_argument("--list", action="store_true", help="列出所有提醒及当前窗口状态")
     args = ap.parse_args()
 
     cfg = load_json(CONFIG_FILE) or {}
-    now = now_cn()
-    opts = cfg.get("options", {}) or {}
+    reminders = cfg.get("reminders") or []
+    opts = cfg.get("options") or {}
     tolerance = int(opts.get("tolerance_minutes", 10))
-    today_str = now.strftime("%Y-%m-%d")
+    now = now_cn()
+    today = now.strftime("%Y-%m-%d")
+
+    if args.list:
+        return cmd_list(cfg, now, tolerance)
+
+    if not reminders:
+        print("❌ config.json 里没有配置任何提醒（reminders 为空）")
+        return 1
 
     print(f"🕐 当前时间：{now.strftime('%Y-%m-%d %H:%M:%S')} (UTC+8)")
 
-    # 1) 时间窗口判定 —— 轮询模式下决定「这次要不要发」
-    rtype, reason = resolve_type(args.type, cfg, now, tolerance, force=args.force)
-    if rtype is None:
-        print(f"⏭️ {reason}，跳过")
-        return 0
+    # 1) 选出本次要处理的提醒
+    if args.rid:
+        rem = next((r for r in reminders if r.get("id") == args.rid), None)
+        if not rem:
+            print(f"❌ 找不到 id 为 {args.rid} 的提醒")
+            return 1
+        targets = [(rem, 0.0)]
+        print(f"🎯 手动指定：[{rem['id']}] {rem.get('time')}")
+    else:
+        targets = resolve_due(cfg, now, tolerance)
+        if not targets:
+            print(f"⏭️ 当前没有提醒命中时间窗口（容差 {tolerance} 分钟），退出")
+            print("   · 查看全部提醒与窗口状态：--list")
+            print("   · 强制发送某条提醒：--id <提醒ID>")
+            return 0
+        for rem, delta in targets:
+            print(f"🎯 命中 [{rem['id']}] {rem.get('time')}（距设定时间 {int(round(delta))} 分钟）")
 
-    sc = (cfg.get("schedule") or {}).get(rtype) or {}
-    print(f"📌 提醒类型：{sc.get('label', rtype)} ({rtype}) — {reason}")
-
-    if not sc.get("enabled", True) and not args.force:
-        print("⏭️ 该提醒已在 config.json 中关闭，跳过")
-        return 0
-
-    # 2) 当日去重 —— 轮询会多次命中窗口，同类型每天只发一次
-    prev = sent_today(rtype, today_str)
-    if prev and not args.force:
-        print(f"✅ 今天已推送过该提醒（{prev}），跳过")
-        return 0
-
-    # 3) 工作日判定
+    # 2) 工作日判定
     work, work_desc, src = get_workday_info(now, opts.get("skip_holidays", True))
     print(f"📅 工作日判定：{'是' if work else '否'} — {work_desc}（来源：{src}）")
-
     if not work and not args.force:
-        print("🎉 今天不用上班，静默跳过（加 --force 可强制发送）")
+        print("🎉 今天不用上班，静默跳过（--force 可强制发送）")
         return 0
 
-    # 组装消息
-    ctx = build_context(cfg, rtype, sc, now, work_desc)
-    dt_title, dt_text = build_dingtalk(ctx, cfg)
-    fs_title, fs_card = build_feishu(ctx, cfg)
+    # 3) 逐条处理
+    ok_count = 0
+    for rem, _ in targets:
+        print(f"\n─── [{rem.get('id')}] {rem.get('label', '提醒')} {rem.get('time')} ───")
 
-    print("\n" + "─" * 46)
-    print("📨 消息预览（钉钉 Markdown）")
-    print("─" * 46)
-    print(dt_text)
-    print("─" * 46 + "\n")
+        if not rem.get("enabled", True) and not args.force:
+            print("     ⏭️ 该提醒已停用")
+            continue
 
-    if args.dry_run:
-        print("🧪 飞书卡片 JSON：")
-        print(json.dumps(fs_card, ensure_ascii=False, indent=2)[:1200])
-        print("\n🧪 dry-run 结束，未发送任何消息")
+        prev = sent_today(rem.get("id"), today)
+        if prev and not args.force:
+            print(f"     ✅ 今天已推送过（{prev}），跳过")
+            continue
 
-    # 发送
-    sent = []
-    ch = cfg.get("channels", {}) or {}
+        ctx = build_context(cfg, rem, now)
 
-    dt = ch.get("dingtalk", {}) or {}
-    if dt.get("enabled", True):
-        wh = os.environ.get(dt.get("webhook_env", "DINGTALK_WEBHOOK"), "")
-        sec = os.environ.get(dt.get("secret_env", "DINGTALK_SECRET"), "")
-        if wh:
-            print(f"📤 [钉钉] {dt_title}")
-            if send_dingtalk(wh, sec, dt_title, dt_text, dry=args.dry_run) and not args.dry_run:
-                sent.append("dingtalk")
-        else:
-            print(f"  ⚠️ 未配置环境变量 {dt.get('webhook_env')}，跳过钉钉")
+        if args.dry_run:
+            _, text = build_dingtalk(ctx)
+            print("     📨 消息预览：")
+            for line in text.splitlines():
+                print("        " + line)
 
-    fs = ch.get("feishu", {}) or {}
-    if fs.get("enabled", True):
-        wh = os.environ.get(fs.get("webhook_env", "FEISHU_WEBHOOK"), "")
-        sec = os.environ.get(fs.get("secret_env", "FEISHU_SECRET"), "")
-        if wh:
-            print(f"📤 [飞书] {fs_title}")
-            if send_feishu(wh, sec, fs_card, dry=args.dry_run) and not args.dry_run:
-                sent.append("feishu")
-        else:
-            print(f"  ⚠️ 未配置环境变量 {fs.get('webhook_env')}，跳过飞书")
+        sent = dispatch(cfg, rem, ctx, dry=args.dry_run)
+        if sent:
+            append_log(rem, sent)
+            print(f"     📝 已记录日志：{', '.join(sent)}")
+            ok_count += 1
 
-    if sent:
-        append_log(rtype, sent)
-        print(f"📝 已记录日志：{', '.join(sent)}")
-    elif not args.dry_run:
-        print("⚠️ 没有任何通道成功发送")
-
+    print(f"\n完成：本次成功推送 {ok_count} 条")
     return 0
 
 

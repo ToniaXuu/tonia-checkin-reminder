@@ -11,17 +11,13 @@ on:
 
   workflow_dispatch:
     inputs:
-      type:
-        description: "提醒类型（auto = 由脚本按时间窗口自动判断）"
-        required: true
-        default: "auto"
-        type: choice
-        options:
-          - auto
-          - in
-          - out
+      id:
+        description: "提醒 ID（留空 = 按时间窗口自动判断；如 dt-1705）"
+        required: false
+        default: ""
+        type: string
       force:
-        description: "强制发送（忽略时间窗口 + 忽略当日去重）"
+        description: "强制发送（忽略工作日判断与当日去重）"
         required: false
         default: false
         type: boolean
@@ -64,12 +60,14 @@ jobs:
           DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
-          REMINDER_TYPE: ${{ inputs.type || 'auto' }}
+          REMINDER_ID: ${{ inputs.id }}
           FORCE_INPUT: ${{ inputs.force }}
         run: |
           ARGS=""
-          if [ "$FORCE_INPUT" = "true" ]; then ARGS="--force"; fi
-          python scripts/send_reminder.py "$REMINDER_TYPE" $ARGS
+          if [ -n "$REMINDER_ID" ]; then ARGS="--id $REMINDER_ID"; fi
+          if [ "$FORCE_INPUT" = "true" ]; then ARGS="$ARGS --force"; fi
+          echo "运行参数: $ARGS"
+          python scripts/send_reminder.py $ARGS
 
       - name: 提交提醒日志与节假日缓存
         run: |
