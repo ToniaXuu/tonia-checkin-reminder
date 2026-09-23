@@ -186,13 +186,13 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 
 ## 版本与更新日志
 
-当前版本 **v1.7.0**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
+当前版本 **v1.7.1**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
 
 **约定：每次改动都要追加一条更新日志。** 编辑 `data/changelog.json`，在 `releases` 数组**开头**插入一条新记录，并把顶层的 `current` 改成新版本号：
 
 ```json
 {
-  "current": "1.7.0",
+  "current": "1.7.1",
   "releases": [
     {
       "version": "1.6.0",

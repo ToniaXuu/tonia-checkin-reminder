@@ -399,7 +399,10 @@ function renderTimeline(){
     return {
       r,
       pos: m / 1440 * 100,
+      // chs 只当 CSS 类名用（tl-pin dt / fs / both），标签另算 ——
+      // CH_LABEL 的键是原始通道名，拿缩写码去查会得到 undefined（曾据此打出「17:15 · undefined」）
       chs: chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt"),
+      chLabel: chs.map(c => CH_LABEL[c] || c).join("+") || "钉钉",
       on: r.enabled !== false
     };
   }).filter(Boolean).sort((a, b) => a.pos - b.pos);
@@ -420,7 +423,7 @@ function renderTimeline(){
     b.className = "tl-pin " + it.chs + (it.on ? "" : " off") + ((toMin(it.r.time) <= nowMin) ? " past" : "");
     b.style.left = it.pos + "%";
     b.style.setProperty("--lane", it.lane);
-    b.innerHTML = `<span class="tl-tip"><b>${esc(it.r.time)}</b> · ${it.chs === "both" ? "钉钉+飞书" : CH_LABEL[it.chs]} · ${esc(it.r.label || "提醒")}</span>`;
+    b.innerHTML = `<span class="tl-tip"><b>${esc(it.r.time)}</b> · ${esc(it.chLabel)} · ${esc(it.r.label || "提醒")}</span>`;
     rail.appendChild(b);
   });
 }
