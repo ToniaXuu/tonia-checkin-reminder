@@ -236,8 +236,82 @@
     bar.classList.remove("on", "done");
     document.documentElement.classList.add("fx-ready");
     window.__fxT = setTimeout(function () { document.documentElement.classList.remove("fx-ready"); }, 1800);
+    paintTheme(readMode(), false);   // bfcache 里主题属性可能已过期，对齐一次
     reveal();
   });
+
+  /* ══ 6. 主题切换 ════════════════════════════════════════ */
+  /* 三态：auto（跟随系统）/ light / dark。
+     data-theme 已由各页 <head> 的内联脚本在首帧前写好，
+     这里只负责「用户点按钮之后」的事：切模式、存偏好、放过渡动画。 */
+
+  var THEME_KEY = "tcr:theme";
+  var MODES = ["auto", "light", "dark"];
+  var MODE_LABEL = { auto: "跟随系统", light: "浅色", dark: "深色" };
+  var mql = null;
+  try { mql = window.matchMedia("(prefers-color-scheme: dark)"); } catch (e) {}
+
+  function readMode() {
+    try {
+      var v = localStorage.getItem(THEME_KEY);
+      if (v === "light" || v === "dark" || v === "auto") return v;
+    } catch (e) {}
+    return "auto";
+  }
+
+  function resolveTheme(mode) {
+    if (mode === "light" || mode === "dark") return mode;
+    return (mql && mql.matches) ? "dark" : "light";
+  }
+
+  var themeAnimT = 0;
+
+  /** animate=true 时临时挂 .theme-anim，让颜色平滑过渡（平时不挂，免得拖慢 hover） */
+  function paintTheme(mode, animate) {
+    var root = document.documentElement;
+    var t = resolveTheme(mode);
+    if (animate) {
+      root.classList.add("theme-anim");
+      clearTimeout(themeAnimT);
+      themeAnimT = setTimeout(function () { root.classList.remove("theme-anim"); }, 320);
+    }
+    root.setAttribute("data-theme", t);
+    root.setAttribute("data-theme-mode", mode);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", t === "dark" ? "#0b0f16" : "#f5f7fa");
+  }
+
+  function initTheme() {
+    var btn = document.getElementById("theme-btn");
+    var mode = readMode();
+
+    function syncBtn() {
+      if (!btn) return;
+      var tip = "主题：" + MODE_LABEL[mode];
+      btn.title = tip;
+      btn.setAttribute("aria-label", "切换主题，当前" + MODE_LABEL[mode]);
+    }
+
+    if (btn) {
+      btn.addEventListener("click", function () {
+        mode = MODES[(MODES.indexOf(readMode()) + 1) % MODES.length];
+        try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+        paintTheme(mode, true);
+        syncBtn();
+        toast("主题：" + MODE_LABEL[mode], "ok", 1800);
+      });
+    }
+
+    // 系统主题变化 —— 只有 auto 模式才跟着变，手动指定的不被动摇
+    if (mql) {
+      var onSys = function () { if (readMode() === "auto") paintTheme("auto", true); };
+      if (mql.addEventListener) mql.addEventListener("change", onSys);
+      else if (mql.addListener) mql.addListener(onSys);
+    }
+
+    paintTheme(mode, false);   // 与 head 内联脚本对齐，不重复播动画
+    syncBtn();
+  }
 
   /* ══ 回到顶部 ══════════════════════════════════════════ */
 
@@ -272,6 +346,7 @@
     reveal();
     stagger();
     initTop();
+    initTheme();
     // 动态内容（fetch 后渲染）再扫一次
     setTimeout(function () { stagger(); reveal(); }, 420);
   }

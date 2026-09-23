@@ -5,6 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>设置 · 打卡提醒</title>
 <meta name="theme-color" content="#0b0f16">
+<script>
+/* 主题：必须在首帧前定好 data-theme —— 这段放在样式表与 body 之前，
+   才能避免「先按浅色画一帧、再跳到深色」的闪色。
+     data-theme      = 实际生效值（light | dark），CSS 只认它
+     data-theme-mode = 用户选择（auto | light | dark），驱动切换按钮的图标 */
+(function(){
+  var mode = "auto", dark = false;
+  try {
+    var v = localStorage.getItem("tcr:theme");
+    if (v === "light" || v === "dark" || v === "auto") mode = v;
+  } catch (e) {}
+  try { dark = matchMedia("(prefers-color-scheme: dark)").matches; } catch (e) {}
+  var t = mode === "auto" ? (dark ? "dark" : "light") : mode;
+  var r = document.documentElement;
+  r.setAttribute("data-theme", t);
+  r.setAttribute("data-theme-mode", mode);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.setAttribute("content", t === "dark" ? "#0b0f16" : "#f5f7fa");
+})();
+</script>
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -164,6 +184,11 @@
       <a href="settings.html" class="active">设置</a>
       <a href="changelog.html">更新日志</a>
     </div>
+    <button type="button" class="theme-btn" id="theme-btn" title="主题：跟随系统" aria-label="切换主题">
+      <svg class="tb tb-auto" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path class="tb-fill" d="M12 3.4a8.6 8.6 0 0 1 0 17.2Z"/></svg>
+      <svg class="tb tb-light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 3.6v2.2M12 18.2v2.2M3.6 12h2.2M18.2 12h2.2M7.6 7.6 6.1 6.1M16.4 7.6 17.9 6.1M7.6 16.4 6.1 17.9M16.4 16.4 17.9 17.9"/></svg>
+      <svg class="tb tb-dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.7 14.6A8.7 8.7 0 1 1 9.4 3.3a7 7 0 0 0 11.3 11.3Z"/></svg>
+    </button>
   </nav>
 
   <div class="page-head fx-in">
