@@ -272,32 +272,64 @@ html.fx-ready .fx-in.is-in{
 }
 .px-bar.done i{width:100%!important;transition:width .16s ease-out}
 
-/* ── 页面切换转场幕布 ─────────────────────────────────── */
+/* ── 页面切换转场幕布 ───────────────────────────────────
+   幕布 DOM 内联在各页 <body> 首行（不是 JS 建的）—— 被导航过来的新页
+   在【首帧】就带着幕布，不会先露出内容再被盖住（那是"闪现"的根因）。
+   显示由 <html class="naving"> 驱动，该 class 由各页 head 的内联脚本同步写入：
+
+     html.naving   → 首帧不透明 → 停顿 .38s → 自动淡出 .42s（纯 CSS，不等 JS）
+     .show / .on   → 旧页跳转前的被动开合（app.js 控制）
+
+   背景用【不透明】纯色：新旧两页幕布下都是同一块色，跳转瞬间零差异。 */
 
 .px-veil{
   position:fixed;inset:0;z-index:200;
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   background:
     radial-gradient(620px 340px at 50% 42%, rgba(240,136,62,.11), transparent 68%),
-    rgba(9,12,18,.94);
-  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  opacity:0;pointer-events:none;
-  transition:opacity .34s ease;
+    #090c12;
+  opacity:0;
+  transition:opacity .16s ease;
 }
-.px-veil.on{opacity:1;pointer-events:auto}
+
+/* 新页：首帧即铺满 → 停顿让首帧渲染出来 → 自动淡出 */
+html.naving{overflow:hidden}
+html.naving .px-veil{
+  display:flex;opacity:1;
+  animation:veilOut .42s ease .38s forwards;
+}
+@keyframes veilOut{to{opacity:0}}
+
+/* 进度条同样走纯 CSS：就算 app.js 还没跑到，幕布上也有"正在加载"的动感，
+   不会出现一条空轨道晾在那儿。0.72s 略快于幕布的 0.8s，退场前刚好跑满。 */
+html.naving .px-track i{animation:trackFill .72s cubic-bezier(.15,.6,.3,1) forwards}
+@keyframes trackFill{from{width:0}to{width:100%}}
+
+/* 旧页：跳转前淡入。不带 naving 所以不会被自动淡出打断 */
+.px-veil.show{display:flex}
+.px-veil.show.on{opacity:1}
+
+@media (prefers-reduced-motion: reduce){
+  html.naving{overflow:auto}
+  html.naving .px-veil{display:none}
+}
 .px-veil-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:220px}
 
 .px-logo{position:relative;width:56px;height:56px}
 .px-logo img{
   width:56px;height:56px;border-radius:17px;display:block;object-fit:cover;
   border:1px solid var(--line2);
+  background:#151a23;          /* 占位底色：图片没到之前是深色圆角块，不会突兀跳变 */
   animation:veilBob 1.6s ease-in-out infinite;
 }
 @keyframes veilBob{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.03)}}
 .px-ring{
   position:absolute;inset:-7px;border-radius:23px;
   border:1.5px solid transparent;
-  border-top-color:var(--accent);border-right-color:rgba(240,136,62,.35);
+  border-top-color:var(--accent);
+  border-right-color:rgba(240,136,62,.60);
+  border-bottom-color:rgba(240,136,62,.16);
+  filter:drop-shadow(0 0 5px rgba(240,136,62,.32));
   animation:spin .95s linear infinite;
 }
 .px-veil-txt{

@@ -37,7 +37,6 @@
     bar.classList.add("on");
     barFill.style.width = "0%";
     requestAnimationFrame(function () { barFill.style.width = "38%"; });
-    var at = 38;
     barTicks.push(setTimeout(function () { barFill.style.width = "62%";  }, 220));
     barTicks.push(setTimeout(function () { barFill.style.width = "79%";  }, 720));
     barTicks.push(setTimeout(function () { barFill.style.width = "89%";  }, 1500));
@@ -52,63 +51,69 @@
   }
 
   /* ══ 2. 转场幕布 ════════════════════════════════════════ */
+  /* 幕布是内联在 <body> 首行的 #px-veil（见各页 HTML），这里只负责开合。
+     新页的"显示 → 自动淡出"整条链路走纯 CSS（html.naving + @keyframes veilOut），
+     所以即使本文件加载慢了，幕布也一定盖得住首帧、也一定会自己消失。 */
 
-  var veil = null;
+  var veil = document.getElementById("px-veil");
 
-  function buildVeil() {
-    if (veil) return veil;
-    veil = document.createElement("div");
-    veil.className = "px-veil";
-    veil.innerHTML =
-      '<div class="px-veil-box">' +
-        '<div class="px-logo"><img src="assets/icons/avatar-128.png" alt=""><span class="px-ring"></span></div>' +
-        '<div class="px-veil-txt"><span id="px-veil-label">正在进入</span><span class="px-dots"><i></i><i></i><i></i></span></div>' +
-        '<div class="px-track"><i></i></div>' +
-      "</div>";
-    document.body.appendChild(veil);
-    return veil;
-  }
-
-  /** 跳转前：压暗当前页 */
+  /** 跳转前：淡入幕布把当前页压住 */
   var navigating = false;
 
   function veilLeave(href, label) {
     if (navigating) return;
     navigating = true;
-    var v = buildVeil();
-    var lab = v.querySelector("#px-veil-label");
-    if (lab && label) lab.textContent = label;
-    v.querySelector(".px-track i").style.width = "0%";
-    // 关闭过渡，直接置为不透明，避免闪一帧
-    v.style.transition = "none";
-    v.classList.add("on");
-    v.getBoundingClientRect();
-    v.style.transition = "";
-    requestAnimationFrame(function () {
-      v.querySelector(".px-track i").style.width = "100%";
-    });
-    var t = reduce ? 0 : 300;
-    setTimeout(function () { window.location.href = href; }, t);
-    // 兜底：万一被拦截没跳走，重试一次
-    setTimeout(function () { if (document.visibilityState === "visible") window.location.href = href; }, t + 900);
+
+    try { sessionStorage.setItem(NAV_FLAG, "1"); } catch (e) {}
+
+    var v = reduce ? null : veil;   // 减弱动效时直接硬跳，不摆幕布
+    if (v) {
+      var lab = v.querySelector("#px-veil-label");
+      if (lab && label) lab.textContent = label;
+      // 先 display:flex（此时 opacity 仍是 0），强制 reflow 让 0 成为真实起点
+      v.classList.add("show");
+      v.getBoundingClientRect();
+      v.classList.add("on");            // 真正的淡入动画（.16s），不再瞬间硬切
+      var tr = v.querySelector(".px-track i");
+      if (tr) {
+        tr.style.transition = "none";
+        tr.style.width = "10%";
+        tr.getBoundingClientRect();
+        tr.style.transition = "";
+        tr.style.width = "84%";
+      }
+    }
+
+    // 别让用户等：幕布 .16s 就铺满了，200ms 后就走
+    var wait = reduce ? 0 : 200;
+    setTimeout(function () { window.location.href = href; }, wait);
+    // 兜底：万一被拦截没跳走，重试一次，并把页面还给用户
+    setTimeout(function () {
+      if (document.visibilityState !== "visible") return;
+      window.location.href = href;
+      setTimeout(function () {
+        if (navigating && veil) { veil.classList.remove("show", "on"); navigating = false; }
+      }, 1400);
+    }, wait + 900);
   }
 
-  /** 新页落地：幕布已在不透明态，淡出 */
-  function veilEnter() {
-    var v = buildVeil();
-    v.style.transition = "none";
-    v.classList.add("on");
-    v.querySelector(".px-track i").style.width = "100%";
-    v.getBoundingClientRect();
-    v.style.transition = "";
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        v.classList.remove("on");
-        setTimeout(function () {
-          v.style.display = "none";
-        }, 420);
-      });
-    });
+  /** 新页落地：幕布已由 CSS 自动淡出，这里只等它退场后解锁页面 */
+  function veilEnterAuto() {
+    var v = veil;
+    if (!v) { document.documentElement.classList.remove("naving"); return; }
+
+    var done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      v.classList.remove("show", "on");                              // 先藏幕布
+      document.documentElement.classList.remove("naving");            // 再解锁滚动
+    };
+
+    var tr = v.querySelector(".px-track i");
+    if (tr) tr.style.width = "100%";
+    v.addEventListener("animationend", finish, { once: true });
+    setTimeout(finish, 1000);   // 兜底：animationend 万一没来，也最多只多挂 .2s
   }
 
   /* ══ 3/4. 入场与揭示 ════════════════════════════════════ */
@@ -222,14 +227,16 @@
     veilLeave(href, label || "正在跳转");
   });
 
-  /* bfcache 返回时重置状态 */
+  /* bfcache 返回时重置状态（内联脚本与 CSS 动画都不会重跑，必须手动清干净） */
   window.addEventListener("pageshow", function (e) {
-    if (e.persisted) {
-      if (veil) { veil.classList.remove("on"); veil.style.display = "none"; }
-      bar.classList.remove("on", "done");
-      document.documentElement.classList.add("fx-ready");
-      reveal();
-    }
+    if (!e.persisted) return;
+    navigating = false;
+    document.documentElement.classList.remove("naving");
+    if (veil) veil.classList.remove("show", "on");
+    bar.classList.remove("on", "done");
+    document.documentElement.classList.add("fx-ready");
+    window.__fxT = setTimeout(function () { document.documentElement.classList.remove("fx-ready"); }, 1800);
+    reveal();
   });
 
   /* ══ 回到顶部 ══════════════════════════════════════════ */
@@ -249,18 +256,17 @@
 
   /* ══ 启动 ══════════════════════════════════════════════ */
 
-  if (document.readyState === "loading") barStart();
-  else barStart();
-
   var booted = false;
   function boot() {
     if (booted) return;
     booted = true;
     if (window.__fxT) { clearTimeout(window.__fxT); }
+
     if (cameFromNav && !reduce) {
-      veilEnter();
-      setTimeout(function () { barDone(); }, 240);
+      // 幕布在场、自带进度条 —— 顶部细条就不重复出场了
+      veilEnterAuto();
     } else {
+      barStart();
       barDone();
     }
     reveal();
@@ -270,8 +276,10 @@
     setTimeout(function () { stagger(); reveal(); }, 420);
   }
 
-  window.addEventListener("load", boot);
-  if (document.readyState === "complete") boot();
+  // 尽早跑：defer 脚本执行时 DOM 已解析完（readyState = interactive），
+  // 不必等 window.load —— 那要等完所有图片/字体，白白让幕布多挂几百毫秒
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
 
   window.PFX = {
     reveal: reveal,

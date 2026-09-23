@@ -8,6 +8,20 @@
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<script>
+/* 首帧幕布：进页先确认"是不是被导航过来的"，是就立刻挂 html.naving，
+   让新页在【第一帧】就带着不透明幕布 —— 这是消除"内容闪现"的关键。 */
+(function(){
+  var on = false;
+  try { on = sessionStorage.getItem("tcr:naving") === "1"; } catch (e) {}
+  try { if (matchMedia("(prefers-reduced-motion: reduce)").matches) on = false; } catch (e) {}
+  if (on) document.documentElement.className += " naving";
+  /* 兜底：万一 app.js 挂了，3.5s 后无条件解锁，绝不让页面被永久遮住 */
+  setTimeout(function(){ document.documentElement.classList.remove("naving"); }, 3500);
+})();
+</script>
+<link rel="prefetch" href="index.html">
+<link rel="prefetch" href="settings.html">
 <script>document.documentElement.classList.add("fx-ready");window.__fxT=setTimeout(function(){document.documentElement.classList.remove("fx-ready")},1800);</script>
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/app.js" defer></script>
@@ -90,6 +104,14 @@
 </style>
 </head>
 <body>
+<!-- 转场幕布：内联在此，被导航过来时【首帧】即盖住内容，样式见 style.css -->
+<div id="px-veil" class="px-veil" aria-hidden="true">
+  <div class="px-veil-box">
+    <div class="px-logo"><img src="assets/icons/avatar-128.png" alt="" width="56" height="56" decoding="async"><span class="px-ring"></span></div>
+    <div class="px-veil-txt"><span id="px-veil-label">正在打开更新日志</span><span class="px-dots"><i></i><i></i><i></i></span></div>
+    <div class="px-track"><i></i></div>
+  </div>
+</div>
 <div class="wrap narrow">
 
   <nav class="nav">
