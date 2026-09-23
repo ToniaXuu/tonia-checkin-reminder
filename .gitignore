@@ -9,3 +9,12 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# 本地凭据 / 令牌，绝不入库
+PAT.txt
+*.pat
+*.token
+__shot_*.html
+__n_*.html
+__probe_*.html
+__harness.html

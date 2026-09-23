@@ -8,25 +8,27 @@
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<script>document.documentElement.classList.add("fx-ready");window.__fxT=setTimeout(function(){document.documentElement.classList.remove("fx-ready")},1800);</script>
 <link rel="stylesheet" href="assets/style.css">
+<script src="assets/app.js" defer></script>
 <style>
-  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
   .top-actions{display:flex;gap:9px;flex:none}
 
   /* 提醒列表 */
   .rem-list{display:flex;flex-direction:column;gap:10px}
   .rem-row{
+    position:relative;
     display:flex;align-items:center;gap:18px;
     background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
-    padding:15px 20px;transition:border-color .2s,transform .2s;
+    padding:15px 20px;transition:border-color .2s,transform .22s,box-shadow .3s;
   }
-  .rem-row:hover{transform:translateX(3px)}
+  .rem-row:hover{transform:translateX(3px);box-shadow:0 10px 28px rgba(0,0,0,.28)}
   .rem-row.dt:hover{border-color:rgba(59,130,246,.45)}
   .rem-row.fs:hover{border-color:rgba(240,136,62,.45)}
 
   .rem-time{
     font-family:var(--mono);font-size:23px;font-weight:650;
-    letter-spacing:-.01em;flex:none;min-width:76px;
+    letter-spacing:-.01em;flex:none;min-width:76px;font-variant-numeric:tabular-nums;
   }
   .rem-row.dt .rem-time{color:#79b8ff}
   .rem-row.fs .rem-time{color:#f0b27a}
@@ -36,36 +38,12 @@
   .rem-body{flex:1;min-width:0}
   .rem-msg{font-size:13.5px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .rem-meta{font-size:12px;color:var(--dim2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .rem-row.is-next{border-color:rgba(240,136,62,.5);box-shadow:0 0 0 1px rgba(240,136,62,.12),0 12px 30px rgba(240,136,62,.08)}
+  .tag.next-tag{color:#180c02;background:var(--accent);font-weight:600}
 
-  /* 统计 */
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-  .stat{
-    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
-    padding:19px;transition:border-color .18s,transform .18s;
-  }
-  .stat:hover{border-color:var(--line2);transform:translateY(-2px)}
-  .stat-label{font-size:11.5px;color:var(--dim2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px}
-  .stat-val{font-family:var(--mono);font-size:27px;font-weight:650;line-height:1.1}
-  .stat-val small{font-family:inherit;font-size:13px;color:var(--dim);font-weight:400;margin-left:5px}
+  .flow-title{font-size:13.5px;font-weight:600;margin-bottom:4px}
 
-  /* 链路 */
-  .flow{
-    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
-    padding:22px;font-family:var(--mono);font-size:12.5px;
-    line-height:1.95;color:var(--dim);overflow-x:auto;white-space:pre;
-  }
-  .flow b{color:var(--blue);font-weight:500}
-  .flow i{color:var(--ok);font-style:normal}
-  .flow s{color:var(--accent);text-decoration:none}
-
-  .note{
-    margin-top:14px;background:rgba(210,153,34,.07);
-    border:1px solid rgba(210,153,34,.28);border-radius:var(--r-sm);
-    padding:12px 15px;font-size:12.5px;color:#e3b341;line-height:1.75;
-  }
-  .note code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
-
-  @media(max-width:720px){.stats{grid-template-columns:1fr}}
+  @media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:620px){
     .rem-time{font-size:19px;min-width:62px}
     .rem-msg{white-space:normal}
@@ -91,25 +69,100 @@
     </div>
   </nav>
 
-  <div class="page-head top">
-    <div>
-      <div class="badge live" style="margin-bottom:15px"><span class="dot"></span> GitHub Actions · 运行中</div>
-      <h1>打卡提醒</h1>
+  <div class="hero">
+    <div class="hero-aurora"></div>
+    <div class="hero-body">
+      <div class="badge live"><span class="dot"></span> GitHub Actions · 运行中</div>
+      <h1>打卡<span class="grad">提醒</span></h1>
       <p class="sub" id="sub-line">工作日定时推送打卡提醒 · 钉钉 + 飞书 · 自动跳过节假日与调休</p>
+      <div class="hero-meta">
+        <span id="clock">--:--:--</span>
+        <span class="sep"></span>
+        <span id="today-txt">—</span>
+        <span class="sep"></span>
+        <span id="ch-txt">—</span>
+      </div>
+      <div class="top-actions" style="margin-top:17px">
+        <a class="btn primary" href="settings.html">设置提醒</a>
+        <a class="btn" href="changelog.html">更新日志</a>
+      </div>
     </div>
-    <div class="top-actions">
-      <a class="btn" href="settings.html">设置提醒</a>
+    <div class="next" id="next-card">
+      <div class="next-k">下一条提醒</div>
+      <div class="next-v" id="next-time">--:--</div>
+      <div class="next-lb" id="next-label">正在加载…</div>
+      <div class="next-cd" id="next-cd">—</div>
     </div>
   </div>
 
-  <h2>提醒列表</h2>
-  <div class="rem-list" id="rem-list"><div class="empty">正在加载…</div></div>
+  <h2>提醒列表 <span class="h2-note" id="rem-note"></span></h2>
+  <div class="rem-list" id="rem-list">
+    <div class="sk-card"><div class="sk" style="width:56%;height:34px"></div><div class="sk" style="width:88%;height:16px"></div></div>
+    <div class="sk-card"><div class="sk" style="width:56%;height:34px"></div><div class="sk" style="width:88%;height:16px"></div></div>
+  </div>
+
+  <h2>今日节奏 <span class="h2-note">24 小时刻度 · 悬停查看每条提醒</span></h2>
+  <div class="tl" id="tl">
+    <div class="tl-scale">
+      <span style="left:0%">00</span>
+      <span style="left:25%">06</span>
+      <span style="left:50%">12</span>
+      <span style="left:75%">18</span>
+      <span style="left:100%">24</span>
+    </div>
+    <div class="tl-rail" id="tl-rail">
+      <div class="tl-fill" id="tl-fill"></div>
+      <div class="tl-now" id="tl-now" style="left:0%"></div>
+    </div>
+    <div class="tl-legend">
+      <span><i style="background:var(--dt)"></i>钉钉</span>
+      <span><i style="background:var(--fs)"></i>飞书</span>
+      <span><i style="background:linear-gradient(90deg,var(--dt),var(--fs))"></i>双通道</span>
+      <span><i style="background:var(--txt)"></i>当前时刻</span>
+    </div>
+  </div>
 
   <h2>本月概览</h2>
   <div class="stats">
-    <div class="stat"><div class="stat-label">本月已推送</div><div class="stat-val" id="s-count">0<small>次</small></div></div>
-    <div class="stat"><div class="stat-label">覆盖天数</div><div class="stat-val" id="s-days">0<small>天</small></div></div>
-    <div class="stat"><div class="stat-label">配置提醒</div><div class="stat-val" id="s-total">0<small>条</small></div></div>
+    <div class="stat">
+      <div class="stat-label">本月已推送</div>
+      <div class="stat-val" id="s-count">0<small>次</small></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">覆盖天数</div>
+      <div class="stat-val" id="s-days">0<small>天</small></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">配置提醒</div>
+      <div class="stat-val" id="s-total">0<small>条</small></div>
+    </div>
+    <div class="stat ring-stat">
+      <div class="ring">
+        <svg width="58" height="58" viewBox="0 0 58 58">
+          <circle class="bgc" cx="29" cy="29" r="25"></circle>
+          <circle class="fgc" id="ring-fg" cx="29" cy="29" r="25"
+                  stroke-dasharray="157.08" stroke-dashoffset="157.08"></circle>
+        </svg>
+        <b id="ring-txt">0%</b>
+      </div>
+      <div>
+        <div class="stat-label" style="margin-bottom:5px">今日进度</div>
+        <div class="stat-val" id="s-today" style="font-size:22px">0<small>/0</small></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>近 30 天推送</h2>
+  <div class="heat-wrap">
+    <div class="heat" id="heat"></div>
+    <div class="heat-legend">
+      <span>少</span>
+      <i></i><i style="background:rgba(240,136,62,.26);border-color:rgba(240,136,62,.4)"></i>
+      <i style="background:rgba(240,136,62,.58);border-color:rgba(240,136,62,.72)"></i>
+      <i style="background:var(--accent);border-color:#ffb97d"></i>
+      <span>多</span>
+      <span style="margin-left:auto" id="heat-note"></span>
+    </div>
   </div>
 
   <h2>推送记录</h2>
@@ -121,19 +174,58 @@
   </div>
 
   <h2>运行链路</h2>
-  <div class="flow">cron-job.org ──<b>每 5 分钟 ping 一次</b>──▶ GitHub Actions
-                                        │
-                                        ├─ 时间窗口判定  <i>命中 [设定时间-1分, 设定时间+容差] 才继续，其余轮次秒退</i>
-                                        ├─ 当日去重      <i>按提醒 ID 去重，同一条每天最多推一次</i>
-                                        ├─ 工作日判定    <i>timor.tech 节假日接口（含调休补班）</i>
-                                        ├─ 消息组装      <i>自定义文案 + 可选天气 / 月度进度</i>
-                                        ├─ 通道分发      <i>按每条提醒自己的 channels 发往钉钉 / 飞书</i>
-                                        └─ 日志回写      <i>data/reminder_log.json</i>
+  <div class="steps">
+    <div class="step">
+      <div class="step-n">01</div>
+      <div class="step-b">
+        <div class="step-t">定时唤醒<span class="tag dt">cron-job.org</span></div>
+        <div class="step-d">每 5 分钟 ping 一次，触发 GitHub Actions 的 <code>workflow_dispatch</code>，不带参数 —— 该发哪条由脚本自己判断。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">02</div>
+      <div class="step-b">
+        <div class="step-t">时间窗口判定</div>
+        <div class="step-d">当前时刻落在某条提醒的 <code>[设定时间 − 1 分, 设定时间 + 容差]</code> 内才继续，否则秒退。一天 288 次轮询，绝大多数在这里结束。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">03</div>
+      <div class="step-b">
+        <div class="step-t">当日去重</div>
+        <div class="step-d">读 <code>data/reminder_log.json</code>，按提醒 ID 判断今天是否已经推过，同一条每天最多一次。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">04</div>
+      <div class="step-b">
+        <div class="step-t">工作日判定<span class="tag fs">timor.tech</span></div>
+        <div class="step-d">节假日接口识别法定假日与调休补班；接口挂掉时自动降级为周末判断，提醒照常发。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">05</div>
+      <div class="step-b">
+        <div class="step-t">消息组装</div>
+        <div class="step-d">自定义文案 + 可选天气 / 本月工作日进度，随机句仅在文案留空且开关打开时兜底。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-n">06</div>
+      <div class="step-b">
+        <div class="step-t">通道分发 → 日志回写</div>
+        <div class="step-d">按每条提醒自己的 <code>channels</code> 发往钉钉 / 飞书，成功后把记录写回 <code>data/reminder_log.json</code>，Actions 自动提交。</div>
+      </div>
+    </div>
+  </div>
 
-  <s>※ 定时器只管「叫醒」，发不发由 config.json 里每条提醒的时间决定</s>
-  <i>  所以 settings.html 改完即刻生效，无需动定时器。</i></div>
+  <div class="note info" style="margin-top:16px">
+    <b>为什么是轮询而不是定时触发</b><br>
+    如果让定时器在 17:05 精确触发，那么改 <code>config.json</code> 里的时间<b>不会</b>改变触发时刻，设置页就成了摆设。
+    所以反过来：定时器只管「叫醒」，发不发由配置决定 —— 于是设置页改完即刻生效，无需动定时器。
+  </div>
 
-  <div class="note">
+  <div class="note" style="margin-top:12px">
     <b>关于时间精度</b>：轮询粒度是 5 分钟，提醒时间建议对齐到 5 的倍数（<code>:00</code> <code>:05</code> <code>:10</code> …），送达误差约 +15 秒；
     非整五分钟的时间点会被吸附到最近的轮询点 —— 例如 <code>18:01</code> 会在 <code>18:00</code> 那次轮询就发出（早约 45 秒），<code>18:03</code> 则要等到 <code>18:05</code>。
   </div>
@@ -159,6 +251,20 @@ const FALLBACK = {
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+const toMin = t => {
+  const p = String(t || "").split(":");
+  const h = parseInt(p[0], 10), m = parseInt(p[1], 10);
+  return (isNaN(h) || isNaN(m)) ? null : h * 60 + m;
+};
+
+/* 本地日期（不能用 toISOString —— 那是 UTC，东八区凌晨会算成前一天） */
+const ymdLocal = d => d.getFullYear() + "-"
+  + String(d.getMonth() + 1).padStart(2, "0") + "-"
+  + String(d.getDate()).padStart(2, "0");
+
+let CFG = FALLBACK;
+let LOG = { history: [] };
+
 async function loadJSON(path){
   try{
     const r = await fetch(path + "?t=" + Date.now(), {cache:"no-store"});
@@ -167,11 +273,16 @@ async function loadJSON(path){
   }catch(e){ return null; }
 }
 
-function renderReminders(cfg){
-  const list = (cfg.reminders || []).slice().sort((a, b) => (a.time || "").localeCompare(b.time || ""));
-  const box = document.getElementById("rem-list");
+/* ══════════ 提醒列表 ══════════ */
 
-  document.getElementById("s-total").innerHTML = list.length + "<small>条</small>";
+function sortedReminders(){
+  return (CFG.reminders || []).slice()
+    .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+}
+
+function renderReminders(){
+  const list = sortedReminders();
+  const box = document.getElementById("rem-list");
 
   if(!list.length){
     box.innerHTML = '<div class="empty">还没有配置任何提醒</div>';
@@ -180,8 +291,13 @@ function renderReminders(cfg){
 
   const dt = list.filter(r => (r.channels || []).includes("dingtalk")).length;
   const fs = list.filter(r => (r.channels || []).includes("feishu")).length;
+  const on = list.filter(r => r.enabled !== false).length;
   document.getElementById("sub-line").textContent =
-    `已配置 ${list.length} 条提醒 · 钉钉 ${dt} · 飞书 ${fs} · 自动跳过节假日与调休`;
+    `已配置 ${on} 条生效提醒 · 钉钉 ${dt} · 飞书 ${fs} · 自动跳过节假日与调休`;
+  document.getElementById("ch-txt").textContent = `钉钉 ${dt} · 飞书 ${fs}`;
+  document.getElementById("rem-note").textContent = `共 ${list.length} 条`;
+
+  const nx = nextOf(list, new Date());
 
   box.innerHTML = list.map(r => {
     const chs = r.channels || ["dingtalk"];
@@ -190,29 +306,176 @@ function renderReminders(cfg){
     const tags = chs.map(c =>
       `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join("");
     const msg = (r.message || "").trim() || "<span style='color:var(--dim2)'>（无自定义文案）</span>";
-    return `<div class="rem-row stripe ${cls}${off} fade-up">
+    const isNext = (nx && nx.r === r && r.enabled !== false) ? " is-next" : "";
+    const nextTag = isNext ? '<span class="tag next-tag">下一条</span>' : "";
+    return `<div class="rem-row stripe ${cls}${off}${isNext} fade-up">
       <div class="rem-time">${esc(r.time || "--:--")}</div>
       <div class="rem-body">
         <div class="rem-msg">${msg}</div>
-        <div class="rem-meta">${tags}<span>${esc(r.emoji || "🔔")} ${esc(r.label || "提醒")}</span></div>
+        <div class="rem-meta">${nextTag}${tags}<span>${esc(r.emoji || "🔔")} ${esc(r.label || "提醒")}</span></div>
       </div>
       <span class="pill ${r.enabled === false ? "off" : "on"}">${r.enabled === false ? "已停用" : "已启用"}</span>
     </div>`;
   }).join("");
 }
 
-function renderLog(log, cfg){
-  const hist = (log && log.history) ? log.history.slice().reverse() : [];
+/** 每分钟只更新「下一条」高亮，不整表重绘（避免闪动） */
+function markNext(){
+  const list = sortedReminders();
+  const nx = nextOf(list, new Date());
+  const rows = document.querySelectorAll("#rem-list .rem-row");
+  Array.prototype.forEach.call(rows, (el, i) => {
+    const hit = !!(nx && list[i] && nx.r === list[i] && list[i].enabled !== false);
+    el.classList.toggle("is-next", hit);
+    const meta = el.querySelector(".rem-meta");
+    const old = meta && meta.querySelector(".next-tag");
+    if(hit && meta && !old) meta.insertAdjacentHTML("afterbegin", '<span class="tag next-tag">下一条</span>');
+    if(!hit && old) old.remove();
+  });
+}
+
+/* ══════════ 今日节奏时间轴 ══════════ */
+
+function renderTimeline(){
+  const rail = document.getElementById("tl-rail");
+  // 清掉旧 pin
+  Array.prototype.slice.call(rail.querySelectorAll(".tl-pin")).forEach(n => n.remove());
+
+  const list = sortedReminders();
+  const items = list.map(r => {
+    const m = toMin(r.time);
+    if(m === null) return null;
+    const chs = r.channels || ["dingtalk"];
+    return {
+      r,
+      pos: m / 1440 * 100,
+      chs: chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt"),
+      on: r.enabled !== false
+    };
+  }).filter(Boolean).sort((a, b) => a.pos - b.pos);
+
+  // 同一轨道上相隔不足 1.5% 的提醒向上错层，避免挤在一起看不清
+  const laneEnd = [];
+  items.forEach(it => {
+    let L = 0;
+    while(laneEnd[L] !== undefined && it.pos - laneEnd[L] < 1.5) L++;
+    laneEnd[L] = it.pos;
+    it.lane = L;
+  });
+
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  items.forEach(it => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tl-pin " + it.chs + (it.on ? "" : " off") + ((toMin(it.r.time) <= nowMin) ? " past" : "");
+    b.style.left = it.pos + "%";
+    b.style.setProperty("--lane", it.lane);
+    b.innerHTML = `<span class="tl-tip"><b>${esc(it.r.time)}</b> · ${it.chs === "both" ? "钉钉+飞书" : CH_LABEL[it.chs]} · ${esc(it.r.label || "提醒")}</span>`;
+    rail.appendChild(b);
+  });
+}
+
+function tickNow(){
+  const now = new Date();
+  const m = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+  const pct = m / 1440 * 100;
+  document.getElementById("tl-now").style.left = pct + "%";
+  document.getElementById("tl-fill").style.width = pct + "%";
+  document.getElementById("clock").textContent =
+    [now.getHours(), now.getMinutes(), now.getSeconds()].map(n => String(n).padStart(2, "0")).join(":");
+}
+
+/* ══════════ 下一条提醒倒计时 ══════════ */
+
+function nextOf(list, now){
+  const cur = now.getHours() * 60 + now.getMinutes() * 1 + now.getSeconds() / 60;
+  const sorted = list.filter(r => r.enabled !== false && toMin(r.time) !== null)
+    .slice().sort((a, b) => toMin(a.time) - toMin(b.time));
+  for (const r of sorted){
+    const t = toMin(r.time);
+    if (t >= cur) return { r, inMin: t - cur, tomorrow: false };
+  }
+  if(!sorted.length) return null;
+  return { r: sorted[0], inMin: 1440 - cur + toMin(sorted[0].time), tomorrow: true };
+}
+
+function tickNext(){
+  const nx = nextOf(sortedReminders(), new Date());
+  const card = document.getElementById("next-card");
+  if(!nx){
+    document.getElementById("next-time").textContent = "--:--";
+    document.getElementById("next-label").textContent = "暂无启用的提醒";
+    document.getElementById("next-cd").textContent = "—";
+    card.classList.add("sub-v");
+    return;
+  }
+  card.classList.remove("sub-v");
+  document.getElementById("next-time").textContent = nx.r.time || "--:--";
+  document.getElementById("next-label").textContent =
+    (nx.r.emoji || "🔔") + " " + (nx.r.label || "提醒") + (nx.tomorrow ? "（明天）" : "");
+  const total = Math.max(0, Math.round(nx.inMin * 60));
+  const h = Math.floor(total / 3600), mi = Math.floor((total % 3600) / 60), se = total % 60;
+  document.getElementById("next-cd").innerHTML =
+    h > 0 ? `<b>${h}</b> 小时 <b>${mi}</b> 分后` : `<b>${mi}</b> 分 <b>${se}</b> 秒后`;
+}
+
+/* ══════════ 统计 / 热力图 / 记录 ══════════ */
+
+function monthHistory(){
+  const now = new Date();
+  const ymd = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  return (LOG.history || []).filter(h => (h.date || "").startsWith(ymd));
+}
+
+function renderStats(){
+  const month = monthHistory();
+  const days = new Set(month.map(h => h.date)).size;
+  const total = sortedReminders().length;
+
+  const todayKey = ymdLocal(new Date());
+  const todayPushed = new Set(month.filter(h => h.date === todayKey).map(h => h.rid)).size;
+  const todayOn = sortedReminders().filter(r => r.enabled !== false).length;
+
+  const cu = (window.PFX && PFX.countUp) ? PFX.countUp : (el, v, u) => { el.innerHTML = v + (u ? "<small>" + u + "</small>" : ""); };
+  cu(document.getElementById("s-count"), month.length, "次");
+  cu(document.getElementById("s-days"), days, "天");
+  cu(document.getElementById("s-total"), total, "条");
+
+  const pct = todayOn ? Math.min(100, Math.round(todayPushed / todayOn * 100)) : 0;
+  document.getElementById("s-today").innerHTML = todayPushed + "<small>/" + todayOn + "</small>";
+  const C = 2 * Math.PI * 25;
+  const fg = document.getElementById("ring-fg");
+  fg.setAttribute("stroke-dashoffset", String(C * (1 - pct / 100)));
+  document.getElementById("ring-txt").textContent = pct + "%";
+}
+
+function renderHeat(){
+  const box = document.getElementById("heat");
+  const count = {};
+  (LOG.history || []).forEach(h => { count[h.date] = (count[h.date] || 0) + 1; });
+
+  const today = new Date();
+  const todayKey = ymdLocal(today);
+  let html = "", total = 0, active = 0;
+
+  for(let i = 29; i >= 0; i--){
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    const key = ymdLocal(d);
+    const c = count[key] || 0;
+    if(c) { active++; total += c; }
+    const lv = c === 0 ? "" : (c <= 2 ? " l1" : (c <= 4 ? " l2" : " l3"));
+    const wd = ["日","一","二","三","四","五","六"][d.getDay()];
+    html += `<i class="${(key === todayKey ? "today" : "") + lv}" title="${d.getMonth() + 1}月${d.getDate()}日 周${wd} · ${c ? c + " 次推送" : "无推送"}"></i>`;
+  }
+  box.innerHTML = html;
+  document.getElementById("heat-note").textContent =
+    `30 天共 ${total} 次 · 有推送 ${active} 天`;
+}
+
+function renderLog(){
+  const hist = (LOG.history || []).slice().reverse();
   const body = document.getElementById("log-body");
-  const box  = document.getElementById("log-box");
-
-  const now  = new Date();
-  const ymd  = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-  const month = hist.filter(h => (h.date || "").startsWith(ymd));
-  const days  = new Set(month.map(h => h.date)).size;
-
-  document.getElementById("s-count").innerHTML = month.length + "<small>次</small>";
-  document.getElementById("s-days").innerHTML  = days + "<small>天</small>";
+  const box = document.getElementById("log-box");
 
   if(!hist.length){
     box.innerHTML = '<div class="empty">还没有推送记录 —— 首次运行后这里会自动出现数据</div>';
@@ -220,16 +483,16 @@ function renderLog(log, cfg){
   }
 
   const labelOf = rid => {
-    const r = ((cfg || FALLBACK).reminders || []).find(x => x.id === rid);
+    const r = (CFG.reminders || []).find(x => x.id === rid);
     return r ? `${r.emoji || ""} ${r.label || "提醒"}`.trim() : (rid || "—");
   };
 
   body.innerHTML = hist.slice(0, 14).map(h => {
-    const t = (h.ts || "").split("T")[1] || "—";
     const chs = (h.channels || []).map(c =>
       `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join(" ") || "—";
-    return `<tr>
-      <td class="mono">${esc(h.date || "—")}</td>
+    const ago = (window.PFX && PFX.timeAgo) ? PFX.timeAgo(h.ts) : "";
+    return `<tr class="fade-up">
+      <td class="mono">${esc(h.date || "—")}${ago ? `<span class="ago">${esc(ago)}</span>` : ""}</td>
       <td class="mono">${esc(h.time || h.rid || "—")}</td>
       <td class="ch">${esc(labelOf(h.rid))}</td>
       <td>${chs}</td>
@@ -237,16 +500,38 @@ function renderLog(log, cfg){
   }).join("");
 }
 
+/* ══════════ 启动 ══════════ */
+
 (async () => {
   const [cfgRaw, logRaw] = await Promise.all([
     loadJSON("config.json"),
     loadJSON("data/reminder_log.json")
   ]);
-  const cfg = cfgRaw || FALLBACK;
-  renderReminders(cfg);
-  renderLog(logRaw, cfg);
+  CFG = cfgRaw || FALLBACK;
+  LOG = logRaw || { history: [] };
+
+  const wk = ["日","一","二","三","四","五","六"];
+  const d = new Date();
+  document.getElementById("today-txt").textContent =
+    `${d.getMonth() + 1}月${d.getDate()}日 星期${wk[d.getDay()]}`;
+
+  renderReminders();
+  renderTimeline();
+  renderStats();
+  renderHeat();
+  renderLog();
+
+  tickNow();
+  tickNext();
+  setInterval(tickNow, 1000);
+  setInterval(tickNext, 1000);
+  // 每分钟刷新时间轴（已过 / 未到）与列表里的「下一条」标记
+  setInterval(() => { renderTimeline(); markNext(); }, 60000);
+
   document.getElementById("load-hint").textContent =
     (cfgRaw && logRaw) ? "数据已同步" : "本地预览模式（未读取到实时数据）";
+
+  if(window.PFX){ PFX.stagger(); PFX.reveal(); }
 })();
 </script>
 </body>

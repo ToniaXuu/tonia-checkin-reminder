@@ -8,30 +8,47 @@
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<script>document.documentElement.classList.add("fx-ready");window.__fxT=setTimeout(function(){document.documentElement.classList.remove("fx-ready")},1800);</script>
 <link rel="stylesheet" href="assets/style.css">
+<script src="assets/app.js" defer></script>
 <style>
   .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .head-stats{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 
-  .timeline{position:relative;padding-left:28px}
+  .summary{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;
+  }
+  .summary .stat{padding:16px}
+  .summary .stat-val{font-size:22px}
+
+  .timeline{position:relative;padding-left:30px}
   .timeline::before{
-    content:'';position:absolute;left:7px;top:12px;bottom:12px;
-    width:1px;background:var(--line);
+    content:'';position:absolute;left:7px;top:14px;bottom:14px;width:2px;border-radius:2px;
+    background:linear-gradient(180deg,rgba(240,136,62,.65),rgba(88,166,255,.3) 38%,var(--line) 88%);
   }
 
   .rel{position:relative;margin-bottom:16px}
   .rel::before{
-    content:'';position:absolute;left:-25px;top:24px;
-    width:9px;height:9px;border-radius:50%;
+    content:'';position:absolute;left:-27px;top:25px;
+    width:10px;height:10px;border-radius:50%;
     background:var(--bg);border:2px solid var(--line2);
-    transition:border-color .2s;
+    transition:border-color .22s,box-shadow .22s,transform .22s;
   }
   .rel.current::before{
     background:var(--accent);border-color:var(--accent);
     box-shadow:0 0 0 4px rgba(240,136,62,.16);
+    animation:verPulse 2.6s ease-out infinite;
   }
-  .rel:hover::before{border-color:var(--accent)}
+  @keyframes verPulse{
+    0%{box-shadow:0 0 0 0 rgba(240,136,62,.5)}
+    70%{box-shadow:0 0 0 9px rgba(240,136,62,0)}
+    100%{box-shadow:0 0 0 0 rgba(240,136,62,0)}
+  }
+  .rel:hover::before{border-color:var(--accent);transform:scale(1.15)}
 
-  .rel .card{margin-bottom:0}
+  .rel .card{margin-bottom:0;transition:border-color .2s,box-shadow .3s,transform .3s}
+  .rel:hover .card{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.34)}
+  .rel.current .card{border-color:rgba(240,136,62,.28)}
 
   .rel-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .ver{
@@ -48,12 +65,15 @@
   .rel-title{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
   .rel-date{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--dim2)}
 
+  .rel-cnt{font-size:11px;color:var(--dim2);font-family:var(--mono)}
+
   .changes{list-style:none;display:flex;flex-direction:column;gap:9px}
   .changes li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.62}
+  .changes li[hidden]{display:none}
   .ct{
     font-size:11px;padding:2px 7px;border-radius:5px;flex:none;
     font-weight:500;letter-spacing:.02em;min-width:54px;text-align:center;
-    margin-top:2px;
+    margin-top:2px;cursor:default;
   }
   .ct.feat{color:#7ee787;background:rgba(63,185,80,.15)}
   .ct.fix{color:#ff9b95;background:rgba(248,81,73,.15)}
@@ -61,18 +81,11 @@
   .ct.refactor{color:#79b8ff;background:rgba(59,130,246,.16)}
   .ct.docs,.ct.chore{color:var(--dim);background:rgba(255,255,255,.06)}
 
-  .note{
-    margin-top:22px;background:rgba(88,166,255,.06);
-    border:1px solid rgba(88,166,255,.25);border-radius:var(--r-sm);
-    padding:14px 16px;font-size:12.5px;color:#a5cdfd;line-height:1.8;
-  }
-  .note b{color:#cfe4ff}
-  .note code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
-
   @media(max-width:640px){
     .rel-date{margin-left:0;width:100%}
-    .timeline{padding-left:22px}
-    .rel::before{left:-19px}
+    .timeline{padding-left:24px}
+    .rel::before{left:-21px}
+    .summary{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -94,17 +107,38 @@
     </div>
   </nav>
 
-  <div class="page-head">
+  <div class="page-head fx-in">
     <div>
       <h1>更新日志</h1>
       <p class="sub">每个版本都记在这里 · 改动代码的同时追加一条记录</p>
     </div>
-    <span class="badge accent" id="ver-badge">当前版本 v—</span>
+    <div class="head-stats">
+      <span class="badge accent" id="ver-badge">当前版本 v—</span>
+    </div>
   </div>
 
-  <div class="timeline" id="timeline"><div class="empty">正在加载…</div></div>
+  <div class="summary">
+    <div class="stat fx-in">
+      <div class="stat-label">当前版本</div>
+      <div class="stat-val" id="m-cur">—</div>
+    </div>
+    <div class="stat fx-in">
+      <div class="stat-label">历史版本</div>
+      <div class="stat-val" id="m-ver">0<small>个</small></div>
+    </div>
+    <div class="stat fx-in">
+      <div class="stat-label">累计改动</div>
+      <div class="stat-val" id="m-chg">0<small>项</small></div>
+    </div>
+  </div>
 
-  <div class="note">
+  <div class="fchips" id="fchips"></div>
+
+  <div class="timeline" id="timeline">
+    <div class="sk-card"><div class="sk" style="width:40%;height:24px"></div><div class="sk" style="width:92%;height:16px"></div><div class="sk" style="width:76%;height:16px"></div></div>
+  </div>
+
+  <div class="note info">
     <b>怎么追加一条更新日志</b><br>
     编辑 <code>data/changelog.json</code>，在 <code>releases</code> 数组<b>开头</b>插入一条新记录，并把顶层的 <code>current</code> 改成新版本号即可。
     类型用 <code>feat</code> / <code>fix</code> / <code>style</code> / <code>refactor</code> / <code>docs</code> / <code>chore</code>，
@@ -125,13 +159,13 @@ const TYPE_LABEL = {
 };
 
 const FALLBACK = {
-  current: "1.4.0",
+  current: "1.5.0",
   releases: [
     {
-      version: "1.4.0", date: "2026-09-22", title: "视觉改版与发布页",
+      version: "1.5.0", date: "2026-09-23", title: "页面转场与自定义时间选择器",
       changes: [
-        {type: "feat", text: "新增更新日志页，此后每次改动都会在这里追加一条记录"},
-        {type: "feat", text: "新增站点图标（鱼丸猫）"}
+        {type: "feat", text: "设置页的时间选择改为自研弹层控件：双列滚动 + 快捷预设 + ±步进 + 轮询吸附提示"},
+        {type: "feat", text: "页面切换加入转场幕布与顶部加载进度条，三页之间跳转不再白屏"}
       ]
     }
   ]
@@ -139,6 +173,9 @@ const FALLBACK = {
 
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+let DATA = FALLBACK;
+let ACTIVE = "all";
 
 async function loadChangelog(){
   try{
@@ -148,11 +185,46 @@ async function loadChangelog(){
   }catch(e){ return null; }
 }
 
-function render(data){
-  const releases = (data.releases || []);
+function allTypes(){
+  const set = [];
+  (DATA.releases || []).forEach(rel => (rel.changes || []).forEach(c => {
+    const t = c.type || "chore";
+    if(!set.includes(t)) set.push(t);
+  }));
+  return set;
+}
+
+function renderChips(){
+  const types = allTypes();
+  const count = t => (DATA.releases || []).reduce((n, rel) =>
+    n + (rel.changes || []).filter(c => (c.type || "chore") === t).length, 0);
+  const total = (DATA.releases || []).reduce((n, rel) => n + (rel.changes || []).length, 0);
+
+  const items = [["all", "全部", total]].concat(types.map(t => [t, TYPE_LABEL[t] || t, count(t)]));
+  document.getElementById("fchips").innerHTML = items.map(([k, label, n]) =>
+    `<button type="button" class="fchip${k === ACTIVE ? " on" : ""}" data-type="${esc(k)}">${esc(label)}<em>${n}</em></button>`
+  ).join("");
+}
+
+function applyFilter(){
+  const rels = document.querySelectorAll(".rel");
+  Array.prototype.forEach.call(rels, rel => {
+    let visible = 0;
+    Array.prototype.forEach.call(rel.querySelectorAll("li[data-type]"), li => {
+      const hit = (ACTIVE === "all" || li.dataset.type === ACTIVE);
+      li.hidden = !hit;
+      if(hit) visible++;
+    });
+    rel.hidden = visible === 0;
+  });
+}
+
+function render(){
+  const releases = (DATA.releases || []);
   const box = document.getElementById("timeline");
 
-  document.getElementById("ver-badge").textContent = "当前版本 v" + (data.current || "—");
+  document.getElementById("ver-badge").textContent = "当前版本 v" + (DATA.current || "—");
+  document.getElementById("m-cur").textContent = "v" + (DATA.current || "—");
 
   if(!releases.length){
     box.innerHTML = '<div class="empty">还没有任何发布记录</div>';
@@ -161,33 +233,56 @@ function render(data){
 
   box.innerHTML = releases.map((rel, i) => {
     const cur = i === 0 ? " current" : "";
-    const items = (rel.changes || []).map(c => {
+    const chs = rel.changes || [];
+    const items = chs.map(c => {
       const t = c.type || "chore";
-      return `<li>
+      return `<li data-type="${esc(t)}">
         <span class="ct ${esc(t)}">${esc(TYPE_LABEL[t] || t)}</span>
         <span>${esc(c.text)}</span>
       </li>`;
     }).join("");
 
     return `<div class="rel${cur} fade-up">
-      <div class="card">
+      <div class="card${i === 0 ? " glow" : ""}">
         <div class="rel-head">
           <span class="ver">v${esc(rel.version)}</span>
           ${i === 0 ? '<span class="ver-now">当前</span>' : ""}
           <span class="rel-title">${esc(rel.title || "")}</span>
+          <span class="rel-cnt">${chs.length} 项</span>
           <span class="rel-date">${esc(rel.date || "")}</span>
         </div>
         <ul class="changes">${items}</ul>
       </div>
     </div>`;
   }).join("");
+
+  const totalChg = releases.reduce((n, rel) => n + (rel.changes || []).length, 0);
+  const cu = (window.PFX && PFX.countUp)
+    ? PFX.countUp
+    : (el, v, u) => { el.innerHTML = v + (u ? "<small>" + u + "</small>" : ""); };
+  cu(document.getElementById("m-ver"), releases.length, "个");
+  cu(document.getElementById("m-chg"), totalChg, "项");
+
+  renderChips();
+  applyFilter();
+  if(window.PFX){ PFX.stagger(); PFX.reveal(); }
 }
 
+document.getElementById("fchips").addEventListener("click", e => {
+  const b = e.target.closest(".fchip");
+  if(!b) return;
+  ACTIVE = b.dataset.type;
+  Array.prototype.forEach.call(document.querySelectorAll(".fchip"),
+    x => x.classList.toggle("on", x === b));
+  applyFilter();
+});
+
 (async () => {
-  const data = await loadChangelog() || FALLBACK;
-  render(data);
+  const data = await loadChangelog();
+  DATA = data || FALLBACK;
+  render();
   document.getElementById("load-hint").textContent =
-    (data === FALLBACK) ? "本地预览模式（未读取到实时数据）" : `共 ${(data.releases || []).length} 个版本`;
+    (data === FALLBACK || !data) ? "本地预览模式（未读取到实时数据）" : `共 ${(data.releases || []).length} 个版本`;
 })();
 </script>
 </body>

@@ -8,47 +8,61 @@
 <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" href="assets/icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<script>document.documentElement.classList.add("fx-ready");window.__fxT=setTimeout(function(){document.documentElement.classList.remove("fx-ready")},1800);</script>
 <link rel="stylesheet" href="assets/style.css">
+<script src="assets/app.js" defer></script>
 <style>
-  .wrap{padding-bottom:130px}
+  .wrap{padding-bottom:132px}
 
   .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 
   label.lbl{display:block;font-size:12px;color:var(--dim);margin-bottom:5px;letter-spacing:.02em}
 
-  input[type=text],input[type=password],input[type=time],input[type=number],textarea,select{
+  input[type=text],input[type=password],input[type=number],textarea,select{
     width:100%;background:var(--bg);color:var(--txt);
     border:1px solid var(--line);border-radius:var(--r-sm);
     padding:8px 11px;font-size:13.5px;font-family:inherit;
-    transition:border-color .18s,box-shadow .18s;
+    transition:border-color .18s,box-shadow .18s,background .18s;
   }
-  textarea{resize:vertical;min-height:64px;line-height:1.65}
+  textarea{resize:vertical;min-height:66px;line-height:1.7}
   input:focus,textarea:focus,select:focus{
     outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.14);
   }
-  input[type=time]{font-family:var(--mono);cursor:pointer;width:auto;min-width:114px}
   input:disabled,textarea:disabled,select:disabled{opacity:.45;cursor:not-allowed}
+  select{cursor:pointer;appearance:none;
+    background-image:linear-gradient(45deg,transparent 50%,var(--dim2) 50%),linear-gradient(135deg,var(--dim2) 50%,transparent 50%);
+    background-position:calc(100% - 17px) calc(50% + 1px),calc(100% - 12px) calc(50% + 1px);
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px;}
 
   .row{display:grid;grid-template-columns:1fr 1fr;gap:13px}
   @media(max-width:640px){.row{grid-template-columns:1fr}}
 
   /* 提醒卡片 */
   .rem{
+    position:relative;overflow:hidden;
     background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
-    padding:16px;margin-bottom:12px;transition:border-color .18s;
+    padding:16px;margin-bottom:12px;
+    transition:border-color .18s,box-shadow .3s,transform .3s;
   }
-  .rem:hover{border-color:var(--line2)}
-  .rem-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:13px}
-  .rem-idx{font-family:var(--mono);font-size:11.5px;color:var(--dim2);flex:none;min-width:18px}
-  .rem-actions{margin-left:auto;display:flex;align-items:center;gap:7px}
+  .rem:hover{border-color:var(--line2);box-shadow:0 12px 32px rgba(0,0,0,.28)}
+  .rem.removed{animation:remOut .3s ease both}
+  @keyframes remOut{to{opacity:0;transform:translateX(-14px) scale(.98)}}
+  .rem-top{display:flex;align-items:flex-start;gap:11px;flex-wrap:wrap;margin-bottom:13px}
+  .rem-idx{
+    font-family:var(--mono);font-size:11.5px;color:var(--dim2);
+    flex:none;min-width:22px;height:22px;margin-top:12px;
+    display:grid;place-items:center;border-radius:7px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);
+  }
+  .rem-actions{margin-left:auto;display:flex;align-items:center;gap:7px;margin-top:6px}
 
-  .t-col{display:flex;flex-direction:column;gap:4px}
+  .t-col{display:flex;flex-direction:column;gap:5px}
   .snap{font-size:11.5px;line-height:1.4;min-height:16px;transition:color .2s}
   .snap.ok{color:var(--ok)}
   .snap.early{color:var(--warn)}
   .snap.late{color:var(--dim2)}
 
-  .chips{display:flex;gap:6px}
+  .chips{display:flex;gap:6px;margin-top:9px}
   .chip{
     border:1px solid var(--line);background:var(--bg);color:var(--dim2);
     padding:5px 12px;border-radius:8px;font-size:12.5px;font-family:inherit;
@@ -65,7 +79,7 @@
     font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
     transition:all .16s;font-family:inherit;
   }
-  .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err)}
+  .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err);background:rgba(248,81,73,.08)}
   .icon-btn:disabled{opacity:.35;cursor:not-allowed}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none}
@@ -78,11 +92,19 @@
 
   .actionbar{
     position:fixed;left:0;right:0;bottom:0;z-index:20;
-    background:rgba(11,15,22,.93);backdrop-filter:blur(12px);
+    background:rgba(11,15,22,.94);-webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
     border-top:1px solid var(--line);padding:13px 22px;
   }
-  .actionbar-inner{max-width:800px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .actionbar-inner{max-width:800px;margin:0 auto;display:flex;gap:11px;align-items:center;flex-wrap:wrap}
   .spacer{flex:1}
+  .unsaved{
+    display:none;align-items:center;gap:6px;font-size:12px;color:var(--warn);
+    border:1px solid rgba(210,153,34,.35);background:rgba(210,153,34,.09);
+    padding:4px 10px;border-radius:999px;
+  }
+  .unsaved.on{display:inline-flex;animation:fadeUp .3s ease both}
+  .unsaved i{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:pulse2 1.6s infinite}
+  @keyframes pulse2{0%,100%{opacity:1}50%{opacity:.3}}
 
   .warn-box{
     background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.28);
@@ -99,11 +121,12 @@
   .opt-desc{font-size:12px;color:var(--dim2);margin-top:3px}
 
   @media(max-width:640px){
-    .rem-actions{margin-left:0;width:100%}
+    .rem-actions{margin-left:0;width:100%;justify-content:flex-end}
+    .rem-idx{margin-top:0}
   }
 </style>
 </head>
-<body>
+<body class="has-actionbar">
 <div class="wrap narrow">
 
   <nav class="nav">
@@ -121,7 +144,7 @@
     </div>
   </nav>
 
-  <div class="page-head">
+  <div class="page-head fx-in">
     <div>
       <h1>提醒设置</h1>
       <p class="sub">每条提醒可单独设定时间、通道和文案 · 保存后提交到 GitHub，下一轮轮询即生效</p>
@@ -131,15 +154,15 @@
 
   <div class="status" id="status"></div>
 
-  <div class="warn-box">
+  <div class="warn-box fx-in">
     <b>关于访问令牌</b><br>
     保存配置需要向 GitHub 写入文件，必须使用你自己的 Personal Access Token。令牌<b>只保存在本浏览器本地</b>，不上传任何第三方。<br>
     建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:#e3b341">GitHub → Fine-grained tokens</a> 新建，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code>，并设置较短有效期。
   </div>
 
-  <div class="card">
+  <div class="card glow fx-in">
     <div class="card-head">
-      <div class="card-title">仓库连接</div>
+      <div class="card-title"><span class="ct-ico">🔌</span>仓库连接</div>
       <button class="btn sm" id="btn-connect">连接并加载</button>
     </div>
     <div class="row">
@@ -153,16 +176,16 @@
     <div class="hint" style="margin-top:11px">只填一次，浏览器会记住。换设备或清缓存后需重填。</div>
   </div>
 
-  <div class="card-head" style="margin:26px 0 13px">
-    <div class="card-title">提醒列表 <span class="hint" id="rem-count"></span></div>
+  <div class="card-head fx-in" style="margin:26px 0 13px">
+    <div class="card-title"><span class="ct-ico">⏰</span>提醒列表 <span class="hint" id="rem-count"></span></div>
   </div>
 
   <div id="reminder-list"><div class="empty">未连接，暂无数据</div></div>
 
-  <button class="btn block" id="btn-add" disabled>+ 添加提醒</button>
+  <button class="btn block fx-in" id="btn-add" disabled>＋ 添加提醒</button>
 
-  <div class="card" style="margin-top:20px">
-    <div class="card-head"><div class="card-title">位置与天气</div></div>
+  <div class="card glow fx-in" style="margin-top:20px">
+    <div class="card-head"><div class="card-title"><span class="ct-ico">📍</span>位置与天气</div></div>
     <div class="row">
       <div><label class="lbl">城市</label><select id="city-select" disabled></select></div>
       <div>
@@ -175,8 +198,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head"><div class="card-title">全局规则</div></div>
+  <div class="card glow fx-in">
+    <div class="card-head"><div class="card-title"><span class="ct-ico">⚙️</span>全局规则</div></div>
     <div class="opt">
       <div>
         <div class="opt-text">自动跳过周末与法定节假日</div>
@@ -219,8 +242,33 @@
 <div class="actionbar">
   <div class="actionbar-inner">
     <button class="btn primary" id="btn-save" disabled>保存到 GitHub</button>
+    <span class="unsaved" id="unsaved"><i></i>有未保存的改动</span>
     <span class="spacer"></span>
     <span class="hint" id="saved-hint"></span>
+  </div>
+</div>
+
+<!-- 自定义时间选择器（挂到 body，避免被卡片 overflow 裁掉） -->
+<div class="tp-mask" id="tp-mask"></div>
+<div class="tp-pop" id="tp-pop" role="dialog" aria-label="选择提醒时间">
+  <div class="tp-head">
+    <div class="tp-big" id="tp-big">17:00</div>
+    <div class="tp-snap" id="tp-snap"></div>
+  </div>
+  <div class="tp-lbls"><span>小时</span><span>分钟</span></div>
+  <div class="tp-cols">
+    <div class="tp-col" id="tp-hours"></div>
+    <div class="tp-col" id="tp-mins"></div>
+  </div>
+  <div class="tp-quick" id="tp-quick"></div>
+  <div class="tp-foot">
+    <div class="tp-steps">
+      <button type="button" data-step="-5" title="减 5 分钟">−5</button>
+      <button type="button" data-step="-1" title="减 1 分钟">−1</button>
+      <button type="button" data-step="1" title="加 1 分钟">+1</button>
+      <button type="button" data-step="5" title="加 5 分钟">+5</button>
+    </div>
+    <button type="button" class="btn sm primary" data-act="tp-close">完成</button>
   </div>
 </div>
 
@@ -237,12 +285,15 @@ const CITY_PRESETS = [
 const STORE_KEY = "tonia-checkin-conn";
 const API = "https://api.github.com";
 const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书"};
+const TP_PRESETS = ["08:45", "09:00", "12:00", "17:00", "17:30", "18:00"];
 
 let remoteSha = null;
 let remoteRaw = null;
 let model = [];
 let connected = false;
+
 const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -256,6 +307,193 @@ function snapInfo(t){
   if(r === 0) return {kind: "ok",    text: "对准轮询点 · 误差约 +15 秒"};
   if(r === 1) return {kind: "early", text: "会提前到前一个轮询点发出（早约 45 秒）"};
   return {kind: "late", text: "会延迟到下一个轮询点发出（晚约 " + (5 - r) + " 分钟）"};
+}
+
+/* ══════════ 自定义时间选择器 ══════════ */
+
+const TP = { el: null, h: 17, m: 0, nudge: 0 };
+const pop  = $("tp-pop");
+const mask = $("tp-mask");
+
+function buildPicker(){
+  let h = "", m = "";
+  for(let i = 0; i < 24; i++){
+    h += `<button type="button" class="tp-item" data-col="h" data-v="${i}">${pad(i)}</button>`;
+  }
+  for(let i = 0; i < 60; i++){
+    const tick = (i % 5 === 0) ? " tick" : "";
+    m += `<button type="button" class="tp-item${tick}" data-col="m" data-v="${i}">${pad(i)}</button>`;
+  }
+  $("tp-hours").innerHTML = h;
+  $("tp-mins").innerHTML  = m;
+
+  const smart = '<button type="button" class="tp-q smart" data-quick="snap">对齐最近 5 分</button>';
+  $("tp-quick").innerHTML = TP_PRESETS
+    .map(t => `<button type="button" class="tp-q" data-quick="${t}">${t}</button>`).join("") + smart;
+}
+
+function colScroll(col, val){
+  const items = col.children;
+  for(let i = 0; i < items.length; i++){
+    if(+items[i].dataset.v === val){
+      col.scrollTop = items[i].offsetTop - col.clientHeight / 2 + items[i].offsetHeight / 2;
+      return;
+    }
+  }
+}
+
+function placePop(){
+  if(!TP.el) return;
+  if(window.innerWidth <= 560){
+    pop.style.left = ""; pop.style.top = ""; pop.style.bottom = "";
+    return;
+  }
+  const r  = TP.el.getBoundingClientRect();
+  const pw = 274;
+  const ph = pop.offsetHeight || 440;
+  let left = r.left + r.width / 2 - pw / 2;
+  left = Math.max(12, Math.min(left, window.innerWidth - pw - 12));
+  let top = r.bottom + 9;
+  if(top + ph > window.innerHeight - 12){
+    const up = r.top - ph - 9;
+    top = up >= 12 ? up : Math.max(12, window.innerHeight - ph - 12);
+  }
+  pop.style.left = left + "px";
+  pop.style.top  = top + "px";
+  pop.style.bottom = "auto";
+}
+
+function syncPicker(){
+  const val = pad(TP.h) + ":" + pad(TP.m);
+  $("tp-big").innerHTML = pad(TP.h) + "<i>:</i>" + pad(TP.m);
+
+  const s = snapInfo(val), sn = $("tp-snap");
+  sn.textContent = s ? s.text : "";
+  sn.className = "tp-snap " + (s ? s.kind : "");
+
+  Array.prototype.forEach.call($("tp-hours").children, b => b.classList.toggle("on", +b.dataset.v === TP.h));
+  Array.prototype.forEach.call($("tp-mins").children,  b => b.classList.toggle("on", +b.dataset.v === TP.m));
+
+  if(TP.el){
+    const before = TP.el.dataset.time;
+    TP.el.dataset.time = val;
+    const tv = TP.el.querySelector(".tp-val");
+    if(tv) tv.textContent = val;
+    const card = TP.el.closest(".rem");
+    if(card){
+      const i = +card.dataset.idx;
+      if(model[i]) model[i].time = val;
+      refreshSnap(card);
+    }
+    if(before !== val) markDirty();
+  }
+}
+
+function openPicker(tpEl){
+  if(TP.el && TP.el !== tpEl) TP.el.classList.remove("open");
+  TP.el = tpEl;
+  const t = String(tpEl.dataset.time || "17:00").split(":");
+  TP.h = Math.min(23, Math.max(0, parseInt(t[0], 10) || 0));
+  TP.m = Math.min(59, Math.max(0, parseInt(t[1], 10) || 0));
+
+  tpEl.classList.add("open");
+  syncPicker();
+  if(window.innerWidth <= 560) mask.classList.add("on");
+  pop.classList.add("on");
+  placePop();
+
+  const mid = $("tp-hours").clientHeight / 2 + 1;
+  pop.style.setProperty("--tp-mid", mid + "px");
+  // scrollTop 需要在弹层可见后设置才可靠
+  requestAnimationFrame(() => {
+    colScroll($("tp-hours"), TP.h);
+    colScroll($("tp-mins"), TP.m);
+  });
+}
+
+function closePicker(){
+  if(TP.el) TP.el.classList.remove("open");
+  TP.el = null;
+  pop.classList.remove("on");
+  mask.classList.remove("on");
+}
+
+function nudge(delta){
+  const total = (TP.h * 60 + TP.m + delta + 1440) % 1440;
+  TP.h = Math.floor(total / 60);
+  TP.m = total % 60;
+  syncPicker();
+  colScroll($("tp-hours"), TP.h);
+  colScroll($("tp-mins"), TP.m);
+}
+
+buildPicker();
+
+pop.addEventListener("click", e => {
+  const it = e.target.closest(".tp-item");
+  if(it){
+    if(it.dataset.col === "h") TP.h = +it.dataset.v; else TP.m = +it.dataset.v;
+    syncPicker();
+    return;
+  }
+  const q = e.target.closest(".tp-q");
+  if(q){
+    if(q.dataset.quick === "snap"){
+      TP.m = (Math.round(TP.m / 5) * 5) % 60;
+      if(TP.m === 0 && Math.round(TP.m / 5) * 5 === 60) TP.h = (TP.h + 1) % 24;
+    }else{
+      const p = String(q.dataset.quick).split(":");
+      TP.h = +p[0]; TP.m = +p[1];
+    }
+    syncPicker();
+    colScroll($("tp-hours"), TP.h);
+    colScroll($("tp-mins"), TP.m);
+    return;
+  }
+  const st = e.target.closest("[data-step]");
+  if(st){ nudge(parseInt(st.dataset.step, 10)); return; }
+  if(e.target.closest('[data-act="tp-close"]')) closePicker();
+});
+
+/* 点空白处关闭；点触发器则切换 */
+mask.addEventListener("click", closePicker);
+document.addEventListener("click", e => {
+  const open = e.target.closest('[data-act="tp-open"]');
+  if(open){
+    const tpEl = open.closest(".tp");
+    if(TP.el === tpEl) closePicker(); else openPicker(tpEl);
+    return;
+  }
+  if(e.target.closest("#tp-pop")) return;
+  if(!e.target.closest(".tp")) closePicker();
+});
+
+document.addEventListener("keydown", e => {
+  if(!TP.el) return;
+  if(e.key === "Escape") closePicker();
+  if(e.key === "ArrowUp"){ e.preventDefault(); nudge(e.shiftKey ? 30 : 5); }
+  if(e.key === "ArrowDown"){ e.preventDefault(); nudge(e.shiftKey ? -30 : -5); }
+});
+
+let rafPend = false;
+const onMove = () => {
+  if(!TP.el || rafPend) return;
+  rafPend = true;
+  requestAnimationFrame(() => { rafPend = false; placePop(); });
+};
+window.addEventListener("resize", onMove);
+window.addEventListener("scroll", onMove, { passive: true });
+
+/* ══════════ 状态与开关 ══════════ */
+
+function markDirty(){
+  if(!connected) return;
+  $("unsaved").classList.add("on");
+  $("saved-hint").textContent = "";
+}
+
+function clearDirty(){
+  $("unsaved").classList.remove("on");
 }
 
 function setEnabled(on){
@@ -311,30 +549,47 @@ function initCities(){
     if(sel.value !== "__custom"){
       $("city-lat").value = sel.selectedOptions[0].dataset.lat;
       $("city-lon").value = sel.selectedOptions[0].dataset.lon;
+    }else{
+      $("city-lat").focus();
     }
+    markDirty();
   });
 }
+
+/* ══════════ 提醒卡片 ══════════ */
+
+const CLOCK_SVG = '<svg class="tp-ico" viewBox="0 0 16 16" fill="none" aria-hidden="true">'
+  + '<circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.5"/>'
+  + '<path d="M8 4.5V8l2.4 1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
 function remCard(r, i){
   const chs = r.channels || ["dingtalk"];
   const cls = chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt");
   const off = r.enabled === false ? " off" : "";
   const dis = connected ? "" : "disabled";
-  const chip = k => `<button class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${dis}>${CH_LABEL[k]}</button>`;
-  const s = snapInfo(r.time);
+  const chip = k => `<button type="button" class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${dis}>${CH_LABEL[k]}</button>`;
+  const time = r.time || "17:00";
+  const s = snapInfo(time);
 
-  return `<div class="rem stripe ${cls}${off}" data-idx="${i}">
+  return `<div class="rem stripe fx-in ${cls}${off}" data-idx="${i}">
     <div class="rem-top">
       <span class="rem-idx">${i + 1}</span>
       <div class="t-col">
-        <input type="time" data-field="time" value="${esc(r.time || "17:00")}" ${dis}>
+        <div class="tp" data-field="time" data-time="${esc(time)}">
+          <button type="button" class="tp-btn" data-act="tp-open" ${dis} aria-label="选择提醒时间">
+            <span class="tp-val">${esc(time)}</span>${CLOCK_SVG}
+          </button>
+        </div>
         <span class="snap ${s ? s.kind : ""}" data-snap>${s ? s.text : ""}</span>
       </div>
-      <div class="chips">${chip("dingtalk")}${chip("feishu")}</div>
+      <div>
+        <label class="lbl" style="margin-bottom:0">推送通道</label>
+        <div class="chips">${chip("dingtalk")}${chip("feishu")}</div>
+      </div>
       <div class="rem-actions">
-        <button class="btn sm" data-act="test" ${dis}>测试</button>
-        <label class="switch"><input type="checkbox" data-field="enabled" ${r.enabled === false ? "" : "checked"} ${dis}><span class="slider"></span></label>
-        <button class="icon-btn" data-act="del" title="删除" ${dis}>×</button>
+        <button type="button" class="btn sm" data-act="test" ${dis}>测试</button>
+        <label class="switch" title="启用 / 停用"><input type="checkbox" data-field="enabled" ${r.enabled === false ? "" : "checked"} ${dis}><span class="slider"></span></label>
+        <button type="button" class="icon-btn" data-act="del" title="删除" ${dis}>×</button>
       </div>
     </div>
     <div class="row">
@@ -348,7 +603,18 @@ function remCard(r, i){
   </div>`;
 }
 
+function renderSkeleton(n){
+  let s = "";
+  for(let i = 0; i < (n || 2); i++){
+    s += '<div class="sk-card"><div class="sk" style="width:34%;height:22px"></div>'
+       + '<div class="sk" style="width:100%;height:34px"></div>'
+       + '<div class="sk" style="width:72%;height:34px"></div></div>';
+  }
+  $("reminder-list").innerHTML = s;
+}
+
 function renderReminders(){
+  closePicker();
   const box = $("reminder-list");
   if(!connected){
     box.innerHTML = '<div class="empty">未连接，暂无数据</div>';
@@ -356,21 +622,33 @@ function renderReminders(){
     return;
   }
   if(!model.length){
-    box.innerHTML = '<div class="empty">还没有提醒，点下面的「添加提醒」开始</div>';
+    box.innerHTML = '<div class="empty">还没有提醒<br>点下面的「添加提醒」开始</div>';
     $("rem-count").textContent = "";
     return;
   }
   box.innerHTML = model.map(remCard).join("");
   $("rem-count").textContent = `共 ${model.length} 条`;
+  if(window.PFX){ PFX.reveal(); PFX.stagger(); }
 }
 
 function refreshSnap(card){
-  const input = card.querySelector('[data-field="time"]');
-  const el = card.querySelector('[data-snap]');
-  if(!input || !el) return;
-  const s = snapInfo(input.value);
-  el.textContent = s ? s.text : "";
-  el.className = "snap " + (s ? s.kind : "");
+  const el = card.querySelector('[data-field="time"]');
+  const sEl = card.querySelector('[data-snap]');
+  if(!el || !sEl) return;
+  const s = snapInfo(el.dataset.time);
+  sEl.textContent = s ? s.text : "";
+  sEl.className = "snap " + (s ? s.kind : "");
+}
+
+function removeCard(i, card){
+  if(!confirm(`确定删除第 ${i + 1} 条提醒（${model[i].time || "未设时间"}）？`)) return;
+  card.classList.add("removed");
+  setTimeout(() => {
+    model.splice(i, 1);
+    renderReminders();
+    status("已从列表移除，记得点保存", "warn");
+    markDirty();
+  }, 260);
 }
 
 function bindList(){
@@ -381,14 +659,10 @@ function bindList(){
     const f = e.target.dataset.field;
     if(!card || !f) return;
     const i = +card.dataset.idx;
+    if(!model[i]) return;
     model[i][f] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     if(f === "enabled") card.classList.toggle("off", !e.target.checked);
-    if(f === "time") refreshSnap(card);
-  });
-
-  box.addEventListener("change", e => {
-    const card = e.target.closest(".rem");
-    if(card && e.target.dataset.field === "time") refreshSnap(card);
+    markDirty();
   });
 
   box.addEventListener("click", e => {
@@ -406,14 +680,10 @@ function bindList(){
       if(!next.length){ status("每条提醒至少要保留一个通道", "warn"); return; }
       model[i].channels = next.sort();
       renderReminders();
+      markDirty();
     }
 
-    if(act === "del"){
-      if(!confirm(`确定删除第 ${i + 1} 条提醒（${model[i].time || "未设时间"}）？`)) return;
-      model.splice(i, 1);
-      renderReminders();
-      status("已从列表移除，记得点保存", "info");
-    }
+    if(act === "del") removeCard(i, card);
 
     if(act === "test"){
       const r = model[i];
@@ -423,19 +693,24 @@ function bindList(){
   });
 }
 
+/* ══════════ 读取 / 保存 ══════════ */
+
 async function loadConfig(){
   const c = conn();
   if(!c.owner || !c.repo){ status("请先填写用户名和仓库名", "err"); return; }
   if(!c.token){ status("请填写访问令牌", "err"); return; }
 
-  status("正在验证令牌…", "info");
+  renderSkeleton(2);
+  status("正在验证令牌…", "loading");
   try{
     const u = await fetch(API + "/user", {headers: headers(true)});
     if(!u.ok) throw new Error(u.status === 401 ? "令牌无效或已过期" : "验证失败 " + u.status);
     const user = await u.json();
-    status("令牌有效（" + user.login + "），正在读取 config.json…", "info");
+    status("令牌有效（" + user.login + "），正在读取 config.json…", "loading");
   }catch(e){
-    status("令牌验证失败：" + e.message, "err"); return;
+    status("令牌验证失败：" + e.message, "err");
+    renderReminders();
+    return;
   }
 
   try{
@@ -445,12 +720,15 @@ async function loadConfig(){
     remoteSha = data.sha;
     remoteRaw = JSON.parse(b64decode(data.content));
   }catch(e){
-    status("读取配置失败：" + e.message, "err"); return;
+    status("读取配置失败：" + e.message, "err");
+    renderReminders();
+    return;
   }
 
   model = (remoteRaw.reminders || []).map(r => Object.assign({}, r));
   fillGlobals(remoteRaw);
   setEnabled(true);
+  clearDirty();
   localStorage.setItem(STORE_KEY, JSON.stringify(conn()));
   status(`已连接 · 读取到 ${model.length} 条提醒，可以编辑了`, "ok");
 }
@@ -519,13 +797,15 @@ function buildConfig(){
 }
 
 async function save(){
+  if(TP.el) closePicker();
   let cfg;
   try{ cfg = buildConfig(); }
-  catch(e){ status(e.message, "err"); return; }
+  catch(e){ status(e.message, "err"); if(window.PFX) PFX.toast(e.message, "err"); return; }
 
   const c = conn();
-  $("btn-save").disabled = true;
-  status("正在提交到 GitHub…", "info");
+  const btn = $("btn-save");
+  btn.disabled = true;
+  status("正在提交到 GitHub…", "loading");
 
   try{
     const r = await fetch(`${API}/repos/${c.owner}/${c.repo}/contents/config.json`, {
@@ -547,18 +827,21 @@ async function save(){
     remoteRaw = cfg;
     model = cfg.reminders.map(x => Object.assign({}, x));
     renderReminders();
+    clearDirty();
     $("saved-hint").textContent = "已保存 " + new Date().toLocaleTimeString("zh-CN", {hour12: false});
     status(`已提交到 GitHub（${cfg.reminders.length} 条提醒）。定时任务下一轮（≤5 分钟）就会用新配置。`, "ok");
+    if(window.PFX) PFX.toast(`已保存 ${cfg.reminders.length} 条提醒`, "ok");
   }catch(e){
     status("保存失败：" + e.message, "err");
+    if(window.PFX) PFX.toast("保存失败：" + e.message, "err", 4600);
   }finally{
-    $("btn-save").disabled = false;
+    btn.disabled = false;
   }
 }
 
 async function testRemind(r){
   const c = conn();
-  status(`正在触发测试：${r.label} ${r.time} …`, "info");
+  status(`正在触发测试：${r.label} ${r.time} …`, "loading");
   try{
     const url = `${API}/repos/${c.owner}/${c.repo}/actions/workflows/checkin-reminder.yml/dispatches`;
     const resp = await fetch(url, {
@@ -568,18 +851,26 @@ async function testRemind(r){
     });
     if(resp.status === 204){
       status("已触发，约 20~60 秒后消息送达。测试会忽略去重与工作日判断，也不会写入去重日志。", "ok");
+      if(window.PFX) PFX.toast("测试已触发，稍后查收", "ok");
     }else{
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.message || ("触发失败 " + resp.status));
     }
   }catch(e){
     status("触发失败：" + e.message, "err");
+    if(window.PFX) PFX.toast("触发失败：" + e.message, "err", 4600);
   }
 }
+
+/* ══════════ 启动 ══════════ */
 
 initCities();
 bindList();
 setEnabled(false);
+
+GLOBAL_FIELDS.forEach(id => {
+  $(id).addEventListener("change", () => { if(connected) markDirty(); });
+});
 
 $("btn-add").addEventListener("click", () => {
   model.push({
@@ -592,7 +883,8 @@ $("btn-add").addEventListener("click", () => {
     message: ""
   });
   renderReminders();
-  status("已添加，改完记得点保存", "info");
+  status("已添加，改完记得点保存", "warn");
+  markDirty();
 });
 
 $("btn-connect").addEventListener("click", loadConfig);
