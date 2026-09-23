@@ -134,6 +134,9 @@
 </div>
 <div class="wrap narrow">
 
+  <!-- 左侧页内锚点：内容由 HTML 里带 data-toc 的元素自动生成，样式见 style.css -->
+  <nav class="px-toc" id="px-toc" data-title="本页内容" aria-label="页内导航"></nav>
+
   <nav class="nav">
     <a class="brand" href="index.html">
       <img src="assets/icons/avatar-128.png" alt="鱼丸">
@@ -164,7 +167,7 @@
     </div>
   </div>
 
-  <div class="summary">
+  <div class="summary" id="s-stat" data-toc="统计">
     <div class="stat fx-in">
       <div class="stat-label">当前版本</div>
       <div class="stat-val" id="m-cur">—</div>
@@ -179,13 +182,13 @@
     </div>
   </div>
 
-  <div class="fchips" id="fchips"></div>
+  <div class="fchips" id="fchips" data-toc="按类型筛选"></div>
 
-  <div class="timeline" id="timeline">
+  <div class="timeline" id="timeline" data-toc="版本时间线">
     <div class="sk-card"><div class="sk" style="width:40%;height:24px"></div><div class="sk" style="width:92%;height:16px"></div><div class="sk" style="width:76%;height:16px"></div></div>
   </div>
 
-  <div class="note info">
+  <div class="note info" id="s-doc" data-toc="怎么追加">
     <b>怎么追加一条更新日志</b><br>
     编辑 <code>data/changelog.json</code>，在 <code>releases</code> 数组<b>开头</b>插入一条新记录，并把顶层的 <code>current</code> 改成新版本号即可。
     类型用 <code>feat</code> / <code>fix</code> / <code>style</code> / <code>refactor</code> / <code>docs</code> / <code>chore</code>，

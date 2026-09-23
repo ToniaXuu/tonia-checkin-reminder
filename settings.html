@@ -46,7 +46,9 @@
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/app.js" defer></script>
 <style>
-  .wrap{padding-bottom:132px}
+  /* 底栏改成「有改动才滑出」之后，平时不用再预留那么厚的底部空间 */
+  .wrap{padding-bottom:96px}
+  body.ab-show .wrap{padding-bottom:136px}
 
   .page-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
 
@@ -60,7 +62,7 @@
   }
   textarea{resize:vertical;min-height:66px;line-height:1.7}
   input:focus,textarea:focus,select:focus{
-    outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(88,166,255,.14);
+    outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(var(--blue-rgb),.16);
   }
   input:disabled,textarea:disabled,select:disabled{opacity:.45;cursor:not-allowed}
   select{cursor:pointer;appearance:none;
@@ -78,7 +80,7 @@
     padding:16px;margin-bottom:12px;
     transition:border-color .18s,box-shadow .3s,transform .3s;
   }
-  .rem:hover{border-color:var(--line2);box-shadow:0 12px 32px rgba(0,0,0,.28)}
+  .rem:hover{border-color:var(--line2);box-shadow:var(--sh-hover)}
   .rem.removed{animation:remOut .3s ease both}
   @keyframes remOut{to{opacity:0;transform:translateX(-14px) scale(.98)}}
   .rem-top{display:flex;align-items:flex-start;gap:11px;flex-wrap:wrap;margin-bottom:13px}
@@ -86,7 +88,7 @@
     font-family:var(--mono);font-size:11.5px;color:var(--dim2);
     flex:none;min-width:22px;height:22px;margin-top:12px;
     display:grid;place-items:center;border-radius:7px;
-    background:rgba(255,255,255,.04);border:1px solid var(--line);
+    background:rgba(var(--wash-rgb),.045);border:1px solid var(--line);
   }
   .rem-actions{margin-left:auto;display:flex;align-items:center;gap:7px;margin-top:6px}
 
@@ -103,8 +105,8 @@
     cursor:pointer;transition:all .16s;
   }
   .chip:hover:not(:disabled){border-color:var(--line2);color:var(--txt)}
-  .chip.on[data-ch=dingtalk]{background:rgba(59,130,246,.16);border-color:var(--dt);color:#79b8ff}
-  .chip.on[data-ch=feishu]{background:rgba(240,136,62,.16);border-color:var(--fs);color:#f0b27a}
+  .chip.on[data-ch=dingtalk]{background:rgba(var(--dt-rgb),.16);border-color:var(--dt);color:var(--blue-ink)}
+  .chip.on[data-ch=feishu]{background:rgba(var(--fs-rgb),.16);border-color:var(--fs);color:var(--accent-ink)}
   .chip:disabled{opacity:.4;cursor:not-allowed}
 
   .icon-btn{
@@ -113,42 +115,59 @@
     font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
     transition:all .16s;font-family:inherit;
   }
-  .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err);background:rgba(248,81,73,.08)}
+  .icon-btn:hover:not(:disabled){border-color:var(--err);color:var(--err);background:rgba(var(--err-rgb),.08)}
   .icon-btn:disabled{opacity:.35;cursor:not-allowed}
 
   .switch{position:relative;display:inline-block;width:40px;height:23px;flex:none}
   .switch input{opacity:0;width:0;height:0;position:absolute}
   .slider{position:absolute;inset:0;background:var(--line);border-radius:999px;transition:.2s;cursor:pointer}
-  .slider::before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;background:#94a3b8;border-radius:50%;transition:.2s}
-  .switch input:checked + .slider{background:rgba(240,136,62,.4)}
+  .slider::before{content:'';position:absolute;width:17px;height:17px;left:3px;top:3px;background:var(--dim2);border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:rgba(var(--accent-rgb),.42)}
   .switch input:checked + .slider::before{transform:translateX(17px);background:var(--accent)}
   .switch input:disabled + .slider{opacity:.4;cursor:not-allowed}
 
+  /* ── 底部操作栏 ──────────────────────────────────────────
+     三个要求叠在一起：
+     ① 只有存在未保存改动时才出现 → 平时 translateY(102%) 滑到屏幕外，
+        连底部留白都由 body.ab-show 控制，不会白占一块空间；
+     ② 保存按钮钉在右端 → .spacer{flex:1} 把按钮顶到最右；
+     ③ 适配浅色主题 → 底色改用 --nav-bg 令牌（原来写死 rgba(11,15,22,.94)，
+        浅色下就是一条突兀的黑带）。 */
   .actionbar{
     position:fixed;left:0;right:0;bottom:0;z-index:20;
-    background:rgba(11,15,22,.94);-webkit-backdrop-filter:blur(13px);backdrop-filter:blur(13px);
-    border-top:1px solid var(--line);padding:13px 22px;
+    background:var(--nav-bg);
+    -webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
+    border-top:1px solid var(--line);
+    padding:12px 22px;
+    transform:translateY(102%);opacity:0;pointer-events:none;
+    transition:transform .36s cubic-bezier(.22,.61,.36,1),opacity .26s ease;
   }
-  .actionbar-inner{max-width:800px;margin:0 auto;display:flex;gap:11px;align-items:center;flex-wrap:wrap}
+  .actionbar.on{transform:none;opacity:1;pointer-events:auto}
+  .actionbar-inner{max-width:800px;margin:0 auto;display:flex;gap:11px;align-items:center}
   .spacer{flex:1}
   .unsaved{
-    display:none;align-items:center;gap:6px;font-size:12px;color:var(--warn);
-    border:1px solid rgba(210,153,34,.35);background:rgba(210,153,34,.09);
-    padding:4px 10px;border-radius:999px;
+    display:none;align-items:center;gap:6px;font-size:12px;color:var(--warn-ink);
+    border:1px solid rgba(var(--warn-rgb),.35);background:rgba(var(--warn-rgb),.10);
+    padding:4px 10px;border-radius:999px;white-space:nowrap;
   }
   .unsaved.on{display:inline-flex;animation:fadeUp .3s ease both}
-  .unsaved i{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:pulse2 1.6s infinite}
+  .unsaved i{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:pulse2 1.6s infinite;flex:none}
   @keyframes pulse2{0%,100%{opacity:1}50%{opacity:.3}}
+  /* 保存按钮本体：默认不显示，只有 .on 时才出现 */
+  #btn-save{display:none}
+  #btn-save.on{display:inline-flex;align-items:center;animation:fadeUp .28s ease both}
+  #saved-hint{text-align:right}
 
   .warn-box{
-    background:rgba(210,153,34,.07);border:1px solid rgba(210,153,34,.28);
+    background:rgba(var(--warn-rgb),.09);border:1px solid rgba(var(--warn-rgb),.30);
     border-radius:var(--r-sm);padding:13px 15px;font-size:12.5px;
-    color:#e3b341;line-height:1.8;margin-bottom:18px;
+    color:var(--warn-ink);line-height:1.8;margin-bottom:18px;
   }
-  .warn-box b{color:#f0c674}
-  .warn-box code{background:rgba(0,0,0,.32);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
+  .warn-box b{color:var(--warn-ink);font-weight:700}
+  .warn-box a{color:var(--warn-ink);text-decoration:underline;text-underline-offset:2px}
+  .warn-box code{background:var(--code-bg);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
 
-  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(36,45,59,.5)}
+  .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
   .opt:last-child{border-bottom:none;padding-bottom:0}
   .opt:first-child{padding-top:0}
   .opt-text{font-size:13.5px}
@@ -160,7 +179,7 @@
   }
 </style>
 </head>
-<body class="has-actionbar">
+<body>
 <!-- 转场幕布：内联在此，被导航过来时【首帧】即盖住内容，样式见 style.css -->
 <div id="px-veil" class="px-veil" aria-hidden="true">
   <div class="px-veil-box">
@@ -170,6 +189,9 @@
   </div>
 </div>
 <div class="wrap narrow">
+
+  <!-- 左侧页内锚点：内容由 HTML 里带 data-toc 的元素自动生成，样式见 style.css -->
+  <nav class="px-toc" id="px-toc" data-title="本页内容" aria-label="页内导航"></nav>
 
   <nav class="nav">
     <a class="brand" href="index.html">
@@ -204,10 +226,10 @@
   <div class="warn-box fx-in">
     <b>关于访问令牌</b><br>
     保存配置需要向 GitHub 写入文件，必须使用你自己的 Personal Access Token。令牌<b>只保存在本浏览器本地</b>，不上传任何第三方。<br>
-    建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" style="color:#e3b341">GitHub → Fine-grained tokens</a> 新建，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code>，并设置较短有效期。
+    建议去 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank">GitHub → Fine-grained tokens</a> 新建，只授予<b>本仓库</b>的 <code>Contents: Read and write</code> 与 <code>Actions: Read and write</code>，并设置较短有效期。
   </div>
 
-  <div class="card glow fx-in">
+  <div class="card glow fx-in" id="s-conn" data-toc="仓库连接">
     <div class="card-head">
       <div class="card-title"><span class="ct-ico">🔌</span>仓库连接</div>
       <button class="btn sm" id="btn-connect">连接并加载</button>
@@ -223,7 +245,7 @@
     <div class="hint" style="margin-top:11px">只填一次，浏览器会记住。换设备或清缓存后需重填。</div>
   </div>
 
-  <div class="card-head fx-in" style="margin:26px 0 13px">
+  <div class="card-head fx-in" id="s-rem" data-toc="提醒列表" style="margin:26px 0 13px">
     <div class="card-title"><span class="ct-ico">⏰</span>提醒列表 <span class="hint" id="rem-count"></span></div>
   </div>
 
@@ -231,7 +253,7 @@
 
   <button class="btn block fx-in" id="btn-add" disabled>＋ 添加提醒</button>
 
-  <div class="card glow fx-in" style="margin-top:20px">
+  <div class="card glow fx-in" id="s-city" data-toc="位置与天气" style="margin-top:20px">
     <div class="card-head"><div class="card-title"><span class="ct-ico">📍</span>位置与天气</div></div>
     <div class="row">
       <div><label class="lbl">城市</label><select id="city-select" disabled></select></div>
@@ -245,7 +267,7 @@
     </div>
   </div>
 
-  <div class="card glow fx-in">
+  <div class="card glow fx-in" id="s-global" data-toc="全局规则">
     <div class="card-head"><div class="card-title"><span class="ct-ico">⚙️</span>全局规则</div></div>
     <div class="opt">
       <div>
@@ -286,12 +308,13 @@
 
 </div>
 
-<div class="actionbar">
+<!-- 底部操作栏：平时滑出屏幕，只有存在未保存改动时才出现（见 style.css 注释） -->
+<div class="actionbar" id="actionbar">
   <div class="actionbar-inner">
-    <button class="btn primary" id="btn-save" disabled>保存到 GitHub</button>
     <span class="unsaved" id="unsaved"><i></i>有未保存的改动</span>
     <span class="spacer"></span>
     <span class="hint" id="saved-hint"></span>
+    <button class="btn primary" id="btn-save">保存到 GitHub</button>
   </div>
 </div>
 
@@ -432,7 +455,7 @@ function syncPicker(){
       if(model[i]) model[i].time = val;
       refreshSnap(card);
     }
-    if(before !== val) markDirty();
+    if(before !== val) refreshDirty();
   }
 }
 
@@ -531,26 +554,69 @@ const onMove = () => {
 window.addEventListener("resize", onMove);
 window.addEventListener("scroll", onMove, { passive: true });
 
-/* ══════════ 状态与开关 ══════════ */
+/* ══════════ 变更检测 ══════════ */
 
-function markDirty(){
-  if(!connected) return;
-  $("unsaved").classList.add("on");
-  $("saved-hint").textContent = "";
+/* 不能"改了就标脏" —— 那样把值改回原样，页面依然提示「有未保存的改动」。
+   做法：把「当前表单」和「上次读盘 / 保存成功时的状态」各自序列化成同一份
+   规范化配置，再逐字节比。buildConfig() 本来就做排序与字段归一，直接当规范形用。
+
+   注意 silent 参数：buildConfig 在「自定义城市」时会 prompt() 问名字。
+   检测要高频跑（每次输入），必须跳过弹窗，否则每敲一个键都弹一次输入框。 */
+
+let cleanSig = null;   // 干净基线；null 表示还没读盘，此时不判脏
+
+function configSig(){
+  try { return JSON.stringify(buildConfig(true)); }
+  catch(e) { return null; }      // 经纬度非数字之类的非法输入 → 一律算有改动
 }
 
-function clearDirty(){
-  $("unsaved").classList.remove("on");
+function isDirty(){
+  if(!connected || cleanSig === null) return false;
+  var sig = configSig();
+  return sig === null ? true : sig !== cleanSig;
+}
+
+let barHoldT = 0;
+
+/** 底栏统一刷新。hold=true = 刚保存完，多留 5 秒让人看见回执 */
+function refreshBar(hold){
+  clearTimeout(barHoldT);
+  var dirty = isDirty();
+  var shown = dirty || !!hold;
+
+  $("unsaved").classList.toggle("on", dirty);
+  $("btn-save").classList.toggle("on", dirty);
+  $("btn-save").disabled = !connected;
+  if(dirty) $("saved-hint").textContent = "";
+
+  document.body.classList.toggle("ab-show", shown);
+  $("actionbar").classList.toggle("on", shown);
+
+  if(hold) barHoldT = setTimeout(function(){ refreshBar(false); }, 5000);
+}
+
+/** 读盘成功 / 保存成功：把当前状态记成新的干净基线 */
+function markClean(){
+  cleanSig = configSig();
+  refreshBar(false);
+}
+
+/** 任何一次编辑之后调用 */
+function refreshDirty(){
+  if(!connected) return;
+  if(cleanSig === null) cleanSig = configSig();   // 兜底：还没基线就先建一个
+  refreshBar(false);
 }
 
 function setEnabled(on){
   connected = on;
   GLOBAL_FIELDS.forEach(id => { $(id).disabled = !on; });
-  $("btn-save").disabled = !on;
   $("btn-add").disabled = !on;
+  $("btn-save").disabled = !on;
   renderReminders();
   $("conn-badge").className = "badge " + (on ? "live" : "");
   $("conn-badge-text").textContent = on ? "已连接" : "未连接";
+  if(!on){ cleanSig = null; refreshBar(false); }
 }
 
 function status(msg, kind){
@@ -599,7 +665,7 @@ function initCities(){
     }else{
       $("city-lat").focus();
     }
-    markDirty();
+    refreshDirty();
   });
 }
 
@@ -694,7 +760,7 @@ function removeCard(i, card){
     model.splice(i, 1);
     renderReminders();
     status("已从列表移除，记得点保存", "warn");
-    markDirty();
+    refreshDirty();
   }, 260);
 }
 
@@ -709,7 +775,7 @@ function bindList(){
     if(!model[i]) return;
     model[i][f] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     if(f === "enabled") card.classList.toggle("off", !e.target.checked);
-    markDirty();
+    refreshDirty();
   });
 
   box.addEventListener("click", e => {
@@ -727,7 +793,7 @@ function bindList(){
       if(!next.length){ status("每条提醒至少要保留一个通道", "warn"); return; }
       model[i].channels = next.sort();
       renderReminders();
-      markDirty();
+      refreshDirty();
     }
 
     if(act === "del") removeCard(i, card);
@@ -775,7 +841,7 @@ async function loadConfig(){
   model = (remoteRaw.reminders || []).map(r => Object.assign({}, r));
   fillGlobals(remoteRaw);
   setEnabled(true);
-  clearDirty();
+  markClean();               // 把刚读到的状态记成干净基线
   localStorage.setItem(STORE_KEY, JSON.stringify(conn()));
   status(`已连接 · 读取到 ${model.length} 条提醒，可以编辑了`, "ok");
 }
@@ -800,7 +866,7 @@ function fillGlobals(cfg){
   }
 }
 
-function buildConfig(){
+function buildConfig(silent){
   const base = remoteRaw ? JSON.parse(JSON.stringify(remoteRaw)) : {};
   const sel = $("city-select");
   const manual = sel.value === "__custom";
@@ -810,7 +876,7 @@ function buildConfig(){
   if(isNaN(lat) || isNaN(lon)) throw new Error("经纬度必须是数字");
 
   base.city = { name: manual ? (prevName || "自定义") : sel.value, lat, lon, timezone: "Asia/Shanghai" };
-  if(manual){
+  if(manual && !silent){
     const nm = prompt("给这个地点起个名字（会显示在提醒消息里）：", prevName === "自定义" ? "" : prevName);
     if(nm && nm.trim()) base.city.name = nm.trim();
   }
@@ -874,8 +940,9 @@ async function save(){
     remoteRaw = cfg;
     model = cfg.reminders.map(x => Object.assign({}, x));
     renderReminders();
-    clearDirty();
+    markClean();                                    // 置干净基线，底栏随即收起
     $("saved-hint").textContent = "已保存 " + new Date().toLocaleTimeString("zh-CN", {hour12: false});
+    refreshBar(true);                               // 但多留 5 秒，让人看见这条回执
     status(`已提交到 GitHub（${cfg.reminders.length} 条提醒）。定时任务下一轮（≤5 分钟）就会用新配置。`, "ok");
     if(window.PFX) PFX.toast(`已保存 ${cfg.reminders.length} 条提醒`, "ok");
   }catch(e){
@@ -916,7 +983,7 @@ bindList();
 setEnabled(false);
 
 GLOBAL_FIELDS.forEach(id => {
-  $(id).addEventListener("change", () => { if(connected) markDirty(); });
+  $(id).addEventListener("change", () => { if(connected) refreshDirty(); });
 });
 
 $("btn-add").addEventListener("click", () => {
@@ -931,7 +998,7 @@ $("btn-add").addEventListener("click", () => {
   });
   renderReminders();
   status("已添加，改完记得点保存", "warn");
-  markDirty();
+  refreshDirty();
 });
 
 $("btn-connect").addEventListener("click", loadConfig);

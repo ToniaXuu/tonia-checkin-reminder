@@ -5,7 +5,11 @@
      2. 页面切换转场幕布（淡出 → 新页淡入，视觉上连成一体）
      3. 内容分段入场（.fx-in 上浮）
      4. 滚动揭示（[data-reveal]）
-     5. 数字滚动 / Toast / 回到顶部
+     5. 数字滚动 / Toast
+     6. 吸顶导航（.nav.stuck）
+     7. 左侧页内锚点（#px-toc）
+     8. 主题切换（跟随系统 / 浅色 / 深色）
+     9. 回到顶部（滚动进度环）
    ═══════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -313,18 +317,153 @@
     syncBtn();
   }
 
-  /* ══ 回到顶部 ══════════════════════════════════════════ */
+  /* ══ 吸顶导航 ══════════════════════════════════════════ */
+  /* 阈值用「导航的静态文档位置」，不用 getBoundingClientRect().top ——
+     吸住时 rect.top 恰好等于 0，拿它判断会在边界上反复抖动。
+     测量前先摘掉 .stuck 强制回到静态布局，否则页面若在滚动位置恢复
+     （bfcache）时会把 scrollY 当成静态位置，阈值从此永久偏大。 */
+  function initNav() {
+    var nav = $(".nav");
+    if (!nav) return;
+    nav.classList.remove("stuck");
+    var at = Math.round(nav.getBoundingClientRect().top + window.scrollY);
+    var stuck = false;
+    var run = function () {
+      var v = window.scrollY > at - 1;
+      if (v === stuck) return;
+      stuck = v;
+      nav.classList.toggle("stuck", v);
+    };
+    window.addEventListener("scroll", run, { passive: true });
+    run();
+  }
+
+  /* ══ 左侧页内锚点 ══════════════════════════════════════ */
+  /* 由 HTML 里带 [data-toc="标题"] 的元素自动生成 ——
+     要增删章节只改 HTML，不必回来动这个文件。
+     少于 2 个目标就直接摘掉，避免出现「一个孤零零的标题」那种尴尬。 */
+  function initToc() {
+    var box = document.getElementById("px-toc");
+    if (!box) return;
+
+    var targets = $$("[data-toc]");
+    if (targets.length < 2) { if (box.parentNode) box.parentNode.removeChild(box); return; }
+
+    var head = document.createElement("div");
+    head.className = "px-toc-t";
+    head.textContent = box.getAttribute("data-title") || "本页内容";
+    box.appendChild(head);
+
+    var items = [];
+    targets.forEach(function (el, i) {
+      if (!el.id) el.id = "sec-" + (i + 1);
+      var a = document.createElement("a");
+      a.href = "#" + el.id;
+      a.textContent = el.getAttribute("data-toc") || el.textContent.trim().slice(0, 18);
+      box.appendChild(a);
+      items.push({ a: a, el: el, top: 0 });
+    });
+
+    var cur = null;
+    function setActive(a) {
+      if (cur === a) return;
+      if (cur) cur.classList.remove("on");
+      cur = a;
+      if (a) a.classList.add("on");
+    }
+
+    items.forEach(function (it) {
+      it.a.addEventListener("click", function (e) {
+        e.preventDefault();
+        it.el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+        if (history.replaceState) history.replaceState(null, "", "#" + it.el.id);
+        setActive(it.a);      // 立刻点亮，不等滚动结束
+      });
+    });
+
+    /* 用 offsetTop 累加而不是 getBoundingClientRect()：
+       目标里可能有 .fx-in 这种带 transform 的元素（入场时 translateY 未归零），
+       rect 会把那十几像素的位移算进去，offsetTop 不受 transform 影响。 */
+    function docTop(el) {
+      var y = 0;
+      while (el) { y += el.offsetTop; el = el.offsetParent; }
+      return y;
+    }
+    var lastH = -1;
+    function measure() {
+      items.forEach(function (it) { it.top = docTop(it.el); });
+      lastH = document.documentElement.scrollHeight;
+    }
+    function sync() {
+      /* 页面高度变了就说明布局变了（数据 fetch 回来、卡片增删…），锚点位置必须
+         跟着重测 —— 设置页的提醒列表要等用户点「连接并加载」才渲染，只在启动时
+         量一次的话，之后的高亮会一直偏。读一次 scrollHeight 比每次重测便宜得多。 */
+      var h = document.documentElement.scrollHeight;
+      if (h !== lastH) measure();
+
+      var y = window.scrollY + 104;                 // 让出吸顶导航的高度
+      var pick = items[0];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].top <= y) pick = items[i]; else break;
+      }
+      // 末章往往永远越不过那条线（页面到底了它还没到顶部），滚到底强制点亮
+      var max = h - window.innerHeight;
+      if (max > 0 && window.scrollY >= max - 4) pick = items[items.length - 1];
+      setActive(pick.a);
+    }
+
+    measure();
+    var pend = false;
+    window.addEventListener("scroll", function () {
+      if (pend) return;
+      pend = true;
+      requestAnimationFrame(function () { pend = false; sync(); });
+    }, { passive: true });
+    window.addEventListener("resize", function () { measure(); sync(); });
+
+    // 内容多半是 fetch 之后才渲染的，页面高度会变 —— 多测两次把位置校准回来
+    setTimeout(function () { measure(); sync(); }, 700);
+    setTimeout(function () { measure(); sync(); }, 1800);
+    sync();
+  }
+
+  /* ══ 回到顶部（滚动进度环） ══════════════════════════════ */
+
+  /* 环长 = 2πr，r=19 → 119.38。dashoffset 从满到 0 就是 0% → 100%。 */
+  var RING = 119.38;
 
   function initTop() {
     var b = document.createElement("button");
-    b.className = "px-top";
     b.type = "button";
+    b.className = "px-top";
     b.setAttribute("aria-label", "回到顶部");
-    b.innerHTML = "↑";
-    b.addEventListener("click", function () { window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); });
+    b.title = "回到顶部";
+    b.innerHTML =
+      '<svg viewBox="0 0 44 44" aria-hidden="true">' +
+        '<circle class="pt-bg" cx="22" cy="22" r="19"/>' +
+        '<circle class="pt-fg" cx="22" cy="22" r="19" transform="rotate(-90 22 22)"' +
+        ' stroke-dasharray="' + RING + '" stroke-dashoffset="' + RING + '"/>' +
+        '<path class="pt-arw" d="M22 29.5V16.5M16.4 22.1 22 16.5l5.6 5.6"/>' +
+      '</svg>';
+    b.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    });
     document.body.appendChild(b);
-    var onScroll = function () { b.classList.toggle("on", window.scrollY > 460); };
+
+    var fill = b.querySelector(".pt-fg");
+
+    function onScroll() {
+      var y = window.scrollY;
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      // 阈值每次都现算：内容晚到会让页面变长，启动时定死的阈值会随之失真
+      var showAt = Math.min(460, Math.max(160, max * 0.1));
+      b.classList.toggle("on", y > showAt);
+      var p = max > 0 ? Math.min(1, y / max) : 0;
+      fill.setAttribute("stroke-dashoffset", String(RING * (1 - p)));
+    }
+
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     onScroll();
   }
 
@@ -345,6 +484,8 @@
     }
     reveal();
     stagger();
+    initNav();
+    initToc();
     initTop();
     initTheme();
     // 动态内容（fetch 后渲染）再扫一次

@@ -96,6 +96,9 @@
 </div>
 <div class="wrap">
 
+  <!-- 左侧页内锚点：内容由 HTML 里带 data-toc 的元素自动生成，样式见 style.css -->
+  <nav class="px-toc" id="px-toc" data-title="本页内容" aria-label="页内导航"></nav>
+
   <nav class="nav">
     <a class="brand" href="index.html">
       <img src="assets/icons/avatar-128.png" alt="鱼丸">
@@ -116,7 +119,7 @@
     </button>
   </nav>
 
-  <div class="hero">
+  <div class="hero" id="s-overview" data-toc="概览">
     <div class="hero-aurora"></div>
     <div class="hero-body">
       <div class="badge live"><span class="dot"></span> GitHub Actions · 运行中</div>
@@ -142,13 +145,13 @@
     </div>
   </div>
 
-  <h2>提醒列表 <span class="h2-note" id="rem-note"></span></h2>
+  <h2 id="s-rem" data-toc="提醒列表">提醒列表 <span class="h2-note" id="rem-note"></span></h2>
   <div class="rem-list" id="rem-list">
     <div class="sk-card"><div class="sk" style="width:56%;height:34px"></div><div class="sk" style="width:88%;height:16px"></div></div>
     <div class="sk-card"><div class="sk" style="width:56%;height:34px"></div><div class="sk" style="width:88%;height:16px"></div></div>
   </div>
 
-  <h2>今日节奏 <span class="h2-note">24 小时刻度 · 悬停查看每条提醒</span></h2>
+  <h2 id="s-rhythm" data-toc="今日节奏">今日节奏 <span class="h2-note">24 小时刻度 · 悬停查看每条提醒</span></h2>
   <div class="tl" id="tl">
     <div class="tl-scale">
       <span style="left:0%">00</span>
@@ -169,7 +172,7 @@
     </div>
   </div>
 
-  <h2>本月概览</h2>
+  <h2 id="s-month" data-toc="本月概览">本月概览</h2>
   <div class="stats">
     <div class="stat">
       <div class="stat-label">本月已推送</div>
@@ -199,20 +202,20 @@
     </div>
   </div>
 
-  <h2>近 30 天推送</h2>
+  <h2 id="s-heat" data-toc="近 30 天推送">近 30 天推送</h2>
   <div class="heat-wrap">
     <div class="heat" id="heat"></div>
     <div class="heat-legend">
       <span>少</span>
-      <i></i><i style="background:rgba(240,136,62,.26);border-color:rgba(240,136,62,.4)"></i>
-      <i style="background:rgba(240,136,62,.58);border-color:rgba(240,136,62,.72)"></i>
-      <i style="background:var(--accent);border-color:#ffb97d"></i>
+      <i></i>      <i style="background:rgba(var(--accent-rgb),.26);border-color:rgba(var(--accent-rgb),.4)"></i>
+      <i style="background:rgba(var(--accent-rgb),.58);border-color:rgba(var(--accent-rgb),.72)"></i>
+      <i style="background:var(--accent);border-color:var(--accent-hover)"></i>
       <span>多</span>
       <span style="margin-left:auto" id="heat-note"></span>
     </div>
   </div>
 
-  <h2>推送记录</h2>
+  <h2 id="s-log" data-toc="推送记录">推送记录</h2>
   <div id="log-box">
     <table>
       <thead><tr><th>日期</th><th>时间点</th><th>提醒</th><th>通道</th></tr></thead>
@@ -220,7 +223,7 @@
     </table>
   </div>
 
-  <h2>运行链路</h2>
+  <h2 id="s-flow" data-toc="运行链路">运行链路</h2>
   <div class="steps">
     <div class="step">
       <div class="step-n">01</div>
