@@ -199,6 +199,16 @@
       "channels": [
         "feishu"
       ]
+    },
+    {
+      "date": "2026-09-24",
+      "rid": "rm-ert2h40",
+      "time": "18:20",
+      "label": "下班打卡",
+      "ts": "2026-09-24T18:20:32+08:00",
+      "channels": [
+        "dingtalk"
+      ]
     }
   ]
 }
