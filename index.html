@@ -48,40 +48,175 @@
 <style>
   .top-actions{display:flex;gap:9px;flex:none}
 
-  /* 提醒列表 */
-  .rem-list{display:flex;flex-direction:column;gap:10px}
-  .rem-row{
+  /* ══════ 提醒列表：Timeline + Reminder Cards ══════════
+     左侧一条极淡的竖向时间轴，每条提醒挂一个节点；节点颜色按「通道」取色，
+     卡片自身的左侧 accent 线同样按通道着色（钉钉蓝 / 飞书橙）。
+     轴与节点严格对中，靠两个硬数字：
+       .rem-list{padding-left:34px} + .rem-list::before{left:14px;width:2px}
+       → 轴心在列表内 15px 处
+       .rem-row 的 padding box 从列表内 35px 起（34 + 1px 边框）
+       → 节点 left:-26.5px，宽 13px，中心正好落在 35-20 = 15px
+     改这两个数就得两个一起改，否则节点会从轴上漂走。
+
+     ⚠️ 行上的 overflow 必须是 visible。
+     卡片复用了全局辅助类 .stripe（style.css:420），而 .stripe 带 overflow:hidden
+     —— 那是给 ::before 的 accent 线收边用的，代价是把 left:-26.5px 的节点整个裁掉。
+     节点有正确的 background、位置也对、getBoundingClientRect 也正常，所以只看
+     computed style 的断言查不出来，只有在截图里才看得到「导轨上光秃秃没有点」。
+     现在的分工：行 overflow:visible 放节点出来；accent 线改用「完全落在圆角直线段内」
+     的几何（left:0 + top/bottom:16px ≥ 卡片 border-radius 16px），不需要任何裁剪
+     也不会戳出卡片外。改 accent 线的 inset 时必须保持 ≥ 卡片圆角，否则它会露到外面。 */
+
+  .rem-list{
     position:relative;
-    display:flex;align-items:center;gap:18px;
-    background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);
-    padding:15px 20px;transition:border-color .2s,transform .22s,box-shadow .3s;
+    display:flex;flex-direction:column;gap:11px;
+    padding-left:34px;
   }
-  .rem-row:hover{transform:translateX(3px);box-shadow:0 10px 28px rgba(0,0,0,.28)}
-  .rem-row.dt:hover{border-color:rgba(59,130,246,.45)}
-  .rem-row.fs:hover{border-color:rgba(240,136,62,.45)}
+  .rem-list::before{
+    content:'';position:absolute;left:14px;top:18px;bottom:18px;width:2px;
+    border-radius:2px;
+    background:linear-gradient(180deg,
+      rgba(var(--line-rgb),0),
+      var(--line2) 7%,var(--line2) 93%,
+      rgba(var(--line-rgb),0));
+  }
+
+  .rem-list .rem-row{
+    position:relative;
+    display:grid;grid-template-columns:76px minmax(0,1fr) auto;
+    align-items:center;gap:20px;
+    background:var(--card-glass);
+    border:1px solid var(--line);border-radius:16px;
+    box-shadow:var(--sh-soft);
+    padding:14px 18px 14px 20px;
+    /* 放节点出来（.stripe 的 overflow:hidden 会把它裁掉，见上方注释） */
+    overflow:visible;
+    --stub-rgb:var(--line-rgb);
+    transition:transform .2s cubic-bezier(.22,.61,.36,1),
+               border-color .2s,box-shadow .22s,background .2s;
+  }
+  /* 卡片左侧 accent 线（通道色）。几何刻意整体落在圆角直线段内：
+     left:0（= 1px 边框的内侧）+ top/bottom:16px ≥ border-radius，于是不需要
+     overflow 裁剪也不会戳出卡片。 */
+  .rem-list .rem-row::before{
+    content:'';position:absolute;left:0;top:16px;bottom:16px;width:3px;
+    border-radius:3px;background:var(--line2);opacity:.7;
+    transition:opacity .2s,box-shadow .22s;
+  }
+  .rem-list .rem-row.dt::before{background:var(--dt);--stub-rgb:var(--dt-rgb)}
+  .rem-list .rem-row.fs::before{background:var(--fs);--stub-rgb:var(--accent-rgb)}
+  .rem-list .rem-row.both::before{
+    background:linear-gradient(180deg,var(--dt) 50%,var(--fs) 50%);
+    --stub-rgb:var(--blue-rgb);
+  }
+  .rem-list .rem-row:hover{
+    transform:translateX(3px);
+    background:var(--bg2);
+    border-color:var(--line2);
+    box-shadow:var(--sh-hover);
+  }
+  /* accent 线 hover 提亮；光晕跟着该行的通道色，别让蓝线的卡片亮橙光 */
+  .rem-list .rem-row:hover::before{opacity:1;box-shadow:0 0 10px rgba(var(--stub-rgb),.35)}
+
+  /* 时间轴节点。外圈用 --bg 描一圈，把导轨在节点处断开。
+     节点取「通道色」而不是按下标机械交替 —— 下标交替在实际数据下会出现
+     「蓝线的卡片挂橙点、橙线的卡片挂蓝点」这种反相关，看着像写错了；
+     按通道取色既语义正确，当前这份钉钉/飞书交替的数据本来就呈现出橙蓝相间的节奏。 */
+  .rem-node{
+    position:absolute;left:-26.5px;top:50%;width:13px;height:13px;
+    margin-top:-6.5px;pointer-events:none;
+    --node:var(--accent);--node-solid:var(--accent);
+  }
+  .rem-node::after{
+    content:'';position:absolute;inset:2px;border-radius:50%;
+    background:var(--node);
+    box-shadow:0 0 0 3px var(--bg);
+    transition:transform .2s cubic-bezier(.22,.61,.36,1);
+  }
+  .rem-row.dt .rem-node{--node:var(--dt);--node-solid:var(--dt)}
+  .rem-row.fs .rem-node{--node:var(--fs);--node-solid:var(--fs)}
+  .rem-row.both .rem-node{
+    --node:linear-gradient(90deg,var(--dt),var(--fs));
+    --node-solid:var(--dt);   /* 渐变不能当 border-color，脉冲环单取一色 */
+  }
+  .rem-row.off .rem-node::after{opacity:.45}
+  .rem-row:hover .rem-node::after{transform:scale(1.22)}
 
   .rem-time{
-    font-family:var(--mono);font-size:23px;font-weight:650;
-    letter-spacing:-.01em;flex:none;min-width:76px;font-variant-numeric:tabular-nums;
+    font-family:var(--mono);font-size:22px;font-weight:700;line-height:1.15;
+    letter-spacing:-.018em;font-variant-numeric:tabular-nums;
+    transition:color .2s;
   }
-  .rem-row.dt .rem-time{color:#79b8ff}
-  .rem-row.fs .rem-time{color:#f0b27a}
+  .rem-row.dt .rem-time{color:var(--dt)}
+  .rem-row.fs .rem-time{color:var(--accent)}
   .rem-row.both .rem-time{color:var(--txt)}
-  .rem-row.off .rem-time{color:var(--dim2)}
+  .rem-row.off .rem-time{color:var(--dim3)}
 
-  .rem-body{flex:1;min-width:0}
-  .rem-msg{font-size:13.5px;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .rem-meta{font-size:12px;color:var(--dim2);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-  .rem-row.is-next{border-color:rgba(240,136,62,.5);box-shadow:0 0 0 1px rgba(240,136,62,.12),0 12px 30px rgba(240,136,62,.08)}
-  .tag.next-tag{color:#180c02;background:var(--accent);font-weight:600}
+  .rem-body{min-width:0}
+  .rem-msg{
+    font-size:13.5px;font-weight:500;color:var(--txt2);line-height:1.55;
+    margin-bottom:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .rem-meta{
+    font-size:12px;color:var(--dim2);
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  }
+
+  /* 下一条：比其余条亮一档 —— 通道色淡光晕 + 节点 pulse，
+     但刻意不做报警感（无闪烁、无高饱和底） */
+  .rem-row.is-next{
+    --glow-rgb:var(--accent-rgb);
+    background:var(--bg2);
+    border-color:rgba(var(--glow-rgb),.34);
+    box-shadow:
+      0 0 0 1px rgba(var(--glow-rgb),.07),
+      0 10px 28px rgba(var(--glow-rgb),.10),
+      var(--sh-soft);
+  }
+  .rem-row.is-next.dt{--glow-rgb:var(--dt-rgb)}
+  .rem-row.is-next.fs{--glow-rgb:var(--accent-rgb)}
+  .rem-row.is-next.both{--glow-rgb:var(--blue-rgb)}
+  .rem-row.is-next .rem-time{font-size:23px}
+  .rem-row.is-next .rem-node::before{
+    content:'';position:absolute;inset:2px;border-radius:50%;
+    border:1.5px solid var(--node-solid);
+    animation:nodePulse 2.8s ease-out infinite;
+  }
+  @keyframes nodePulse{
+    0%{transform:scale(.9);opacity:.55}
+    70%{transform:scale(2.2);opacity:0}
+    100%{transform:scale(2.2);opacity:0}
+  }
+  .tag.next-tag{color:#180c02;background:var(--accent);font-weight:650}
 
   .flow-title{font-size:13.5px;font-weight:600;margin-bottom:4px}
 
-  @media(max-width:720px){.stats{grid-template-columns:repeat(2,1fr)}}
+  /* 启用状态带一个小圆点，比纯文字更快扫到 */
+  .rem-list .pill{display:inline-flex;align-items:center;gap:6px}
+  .rem-list .pill::before{
+    content:'';width:5px;height:5px;border-radius:50%;
+    background:currentColor;flex:none;opacity:.85;
+  }
+  /* 骨架屏不属于时间轴，别跟着缩进 */
+  .rem-list>.sk-card{margin-left:-34px;margin-bottom:0}
+
+  @media (prefers-reduced-motion: reduce){
+    .rem-row.is-next .rem-node::before{display:none}
+    .rem-list .rem-row:hover{transform:none}
+  }
+
+  /* 窄屏：导轨与节点一起左移，卡片保留全部信息（文案改为换行而不是截断） */
   @media(max-width:620px){
-    .rem-time{font-size:19px;min-width:62px}
+    .rem-list{padding-left:24px}
+    .rem-list::before{left:10px}
+    .rem-node{left:-20.5px}
+    .rem-list .rem-row{
+      grid-template-columns:60px minmax(0,1fr) auto;
+      gap:13px;padding:13px 14px 13px 15px;
+    }
+    .rem-time{font-size:19px}
+    .rem-row.is-next .rem-time{font-size:20px}
     .rem-msg{white-space:normal}
-    .rem-row{gap:12px;padding:13px 16px}
   }
 </style>
 </head>
@@ -120,25 +255,24 @@
   </nav>
 
   <div class="hero" id="s-overview" data-toc="概览">
-    <div class="hero-aurora"></div>
+    <span class="hero-glow og" aria-hidden="true"></span>
+    <span class="hero-glow bg" aria-hidden="true"></span>
     <div class="hero-body">
       <div class="badge live"><span class="dot"></span> GitHub Actions · 运行中</div>
       <h1>打卡<span class="grad">提醒</span></h1>
       <p class="sub" id="sub-line">工作日定时推送打卡提醒 · 钉钉 + 飞书 · 自动跳过节假日与调休</p>
-      <div class="hero-meta">
-        <span id="clock">--:--:--</span>
-        <span class="sep"></span>
-        <span id="today-txt">—</span>
-        <span class="sep"></span>
-        <span id="ch-txt">—</span>
+      <div class="hero-when">
+        <div class="hw"><span class="hw-k">当前时间</span><b class="hw-v mono" id="clock">--:--:--</b></div>
+        <div class="hw"><span class="hw-k">今天</span><b class="hw-v" id="today-txt">—</b></div>
+        <div class="hw"><span class="hw-k">通道</span><b class="hw-v" id="ch-txt">—</b></div>
       </div>
-      <div class="top-actions" style="margin-top:17px">
+      <div class="top-actions" style="margin-top:18px">
         <a class="btn primary" href="settings.html">设置提醒</a>
         <a class="btn" href="changelog.html">更新日志</a>
       </div>
     </div>
     <div class="next" id="next-card">
-      <div class="next-k">下一条提醒</div>
+      <div class="next-k"><span class="next-dot"></span>下一条提醒</div>
       <div class="next-v" id="next-time">--:--</div>
       <div class="next-lb" id="next-label">正在加载…</div>
       <div class="next-cd" id="next-cd">—</div>
@@ -359,6 +493,7 @@ function renderReminders(){
     const isNext = (nx && nx.r === r && r.enabled !== false) ? " is-next" : "";
     const nextTag = isNext ? '<span class="tag next-tag">下一条</span>' : "";
     return `<div class="rem-row stripe ${cls}${off}${isNext} fade-up">
+      <span class="rem-node" aria-hidden="true"></span>
       <div class="rem-time">${esc(r.time || "--:--")}</div>
       <div class="rem-body">
         <div class="rem-msg">${msg}</div>

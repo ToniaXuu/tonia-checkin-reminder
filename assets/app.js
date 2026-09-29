@@ -10,6 +10,7 @@
      7. 左侧页内锚点（#px-toc）
      8. 主题切换（跟随系统 / 浅色 / 深色）
      9. 回到顶部（滚动进度环）
+    10. 背景粒子（Canvas，环境氛围层）
    ═══════════════════════════════════════════════════════════ */
 (function () {
   "use strict";
@@ -244,10 +245,13 @@
     reveal();
   });
 
-  /* ══ 6. 主题切换 ════════════════════════════════════════ */
+  /* ══ 主题切换 ════════════════════════════════════════ */
   /* 三态：auto（跟随系统）/ light / dark。
      data-theme 已由各页 <head> 的内联脚本在首帧前写好，
      这里只负责「用户点按钮之后」的事：切模式、存偏好、放过渡动画。 */
+
+  /** 由 initFx 注入：主题变了要重新给粒子上色 */
+  var fxRetint = null;
 
   var THEME_KEY = "tcr:theme";
   var MODES = ["auto", "light", "dark"];
@@ -283,6 +287,7 @@
     root.setAttribute("data-theme-mode", mode);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", t === "dark" ? "#0b0f16" : "#f5f7fa");
+    if (fxRetint) fxRetint();   // 粒子跟着换配色
   }
 
   function initTheme() {
@@ -467,6 +472,165 @@
     onScroll();
   }
 
+  /* ══ 10. 背景粒子 ══════════════════════════════════════ */
+  /* 极其克制的环境氛围层 —— 是"桌面空气里的微弱数字尘埃"，不是视觉主体。
+     硬约束（改之前先读一遍，很容易不小心把克制改没了）：
+       · 数量按视口面积算并封顶 34 个
+       · 半径 0.5~1.5px（直径 1~3px），基础透明度 0.08~0.25
+       · 速度 ≤ 0.16px/帧，随机方向，越界回绕并在边缘透明度归零
+       · 连线只在 112px 内出现，alpha 上限 0.075
+       · 配色 6 灰 / 3 蓝 / 1 橙 —— 灰打底，橙只是点缀
+       · 文档不可见时停掉 rAF；prefers-reduced-motion 直接不建
+       · 帧率封顶 ~33fps：粒子本就慢，60fps 是纯浪费，还会牵着吸顶导航的
+         backdrop-filter 每帧重算一遍 */
+
+  var THEME_GRAY = { light: "150,162,180", dark: "150,166,192" };
+
+  function initFx() {
+    if (reduce) return;
+    var probe = document.createElement("canvas");
+    if (!probe.getContext) return;
+
+    var cv = document.createElement("canvas");
+    cv.className = "px-fx";
+    cv.setAttribute("aria-hidden", "true");
+    document.body.appendChild(cv);
+
+    var ctx = cv.getContext("2d");
+    if (!ctx) { cv.remove(); return; }
+
+    var DPR = Math.min(2, window.devicePixelRatio || 1);
+    var W = 0, H = 0;
+    var parts = [];
+    var palette = [];
+    var LINK = 112;
+    var raf = 0, last = 0, resizeT = 0;
+    var css = window.getComputedStyle(document.documentElement);
+
+    /* 取色：直接读主题令牌，保证粒子色永远跟着主题令牌走，
+       不会出现"主题换了两边色号对不上"。 */
+    function readPalette() {
+      css = window.getComputedStyle(document.documentElement);
+      var acc = (css.getPropertyValue("--accent-rgb") || "").trim() || "232,93,4";
+      var blu = (css.getPropertyValue("--blue-rgb") || "").trim() || "79,140,255";
+      var gray = THEME_GRAY[document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light"];
+      palette = [];
+      for (var i = 0; i < 6; i++) palette.push(gray);
+      for (var j = 0; j < 3; j++) palette.push(blu);
+      palette.push(acc);
+    }
+
+    function spawn(i) {
+      var ang = Math.random() * Math.PI * 2;
+      var sp = 0.05 + Math.random() * 0.11;
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: Math.cos(ang) * sp,
+        vy: Math.sin(ang) * sp,
+        r: 0.5 + Math.random() * 1.0,
+        a: 0.08 + Math.random() * 0.17,
+        ph: Math.random() * Math.PI * 2,
+        c: palette[i % palette.length]
+      };
+    }
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      cv.width = Math.round(W * DPR);
+      cv.height = Math.round(H * DPR);
+      cv.style.width = W + "px";
+      cv.style.height = H + "px";
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+      var n = Math.min(34, Math.max(14, Math.round(W * H / 46000)));
+      if (parts.length > n) parts.length = n;
+      while (parts.length < n) parts.push(spawn(parts.length));
+    }
+
+    function frame(ts) {
+      raf = requestAnimationFrame(frame);
+      if (last && ts - last < 30) return;   // 封顶 ~33fps
+      last = ts;
+
+      ctx.clearRect(0, 0, W, H);
+
+      var i, j, k, p, q, dx, dy, d2, d, alpha;
+
+      /* 连线：只连近邻，且必须很淡 */
+      ctx.lineWidth = 1;
+      for (i = 0; i < parts.length; i++) {
+        p = parts[i];
+        for (j = i + 1; j < parts.length; j++) {
+          q = parts[j];
+          dx = p.x - q.x; dy = p.y - q.y;
+          d2 = dx * dx + dy * dy;
+          if (d2 > LINK * LINK) continue;
+          d = Math.sqrt(d2) || 1;
+          alpha = (1 - d / LINK) * 0.075;
+          if (alpha < 0.03) continue;
+          ctx.strokeStyle = "rgba(" + p.c + "," + alpha.toFixed(3) + ")";
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(q.x, q.y);
+          ctx.stroke();
+        }
+      }
+
+      /* 粒子：先走位，再按"离最近边缘的距离"决定显隐 */
+      for (k = 0; k < parts.length; k++) {
+        p = parts[k];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.ph += 0.006;
+        if (p.x < -6) p.x = W + 6; else if (p.x > W + 6) p.x = -6;
+        if (p.y < -6) p.y = H + 6; else if (p.y > H + 6) p.y = -6;
+
+        var edge = Math.min(p.x, W - p.x, p.y, H - p.y);
+        if (edge <= 0) continue;
+        var fade = edge < 70 ? edge / 70 : 1;
+        alpha = p.a * fade * (0.72 + 0.28 * Math.sin(p.ph));
+        if (alpha <= 0.005) continue;
+
+        ctx.fillStyle = "rgba(" + p.c + "," + alpha.toFixed(3) + ")";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, 6.283185307179586);
+        ctx.fill();
+      }
+    }
+
+    function start() {
+      if (raf || document.hidden) return;
+      last = 0;
+      raf = requestAnimationFrame(frame);
+    }
+    function stop() {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+
+    readPalette();
+    resize();
+    start();
+    requestAnimationFrame(function () { cv.classList.add("on"); });
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) stop(); else start();
+    });
+    window.addEventListener("resize", function () {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(resize, 200);
+    });
+
+    /* 主题切换时只换颜色，不重建 —— 重建会在切换瞬间"抖"一下 */
+    fxRetint = function () {
+      readPalette();
+      for (var i = 0; i < parts.length; i++) parts[i].c = palette[i % palette.length];
+    };
+  }
+
   /* ══ 启动 ══════════════════════════════════════════════ */
 
   var booted = false;
@@ -487,6 +651,7 @@
     initNav();
     initToc();
     initTop();
+    initFx();
     initTheme();
     // 动态内容（fetch 后渲染）再扫一次
     setTimeout(function () { stagger(); reveal(); }, 420);
