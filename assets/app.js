@@ -473,16 +473,31 @@
   }
 
   /* ══ 10. 背景粒子 ══════════════════════════════════════ */
-  /* 极其克制的环境氛围层 —— 是"桌面空气里的微弱数字尘埃"，不是视觉主体。
+  /* 克制的环境氛围层 —— 是"桌面空气里的数字尘埃"，不是视觉主体。
      硬约束（改之前先读一遍，很容易不小心把克制改没了）：
-       · 数量按视口面积算并封顶 34 个
-       · 半径 0.5~1.5px（直径 1~3px），基础透明度 0.08~0.25
+       · 数量按视口面积算并封顶 110 个
+       · 半径 1.2~2.8px（直径 2~6px），基础透明度 0.34~0.68
        · 速度 ≤ 0.16px/帧，随机方向，越界回绕并在边缘透明度归零
-       · 连线只在 112px 内出现，alpha 上限 0.075
+       · 连线只在 140px 内出现，alpha 上限 0.14
        · 配色 6 灰 / 3 蓝 / 1 橙 —— 灰打底，橙只是点缀
        · 文档不可见时停掉 rAF；prefers-reduced-motion 直接不建
        · 帧率封顶 ~33fps：粒子本就慢，60fps 是纯浪费，还会牵着吸顶导航的
-         backdrop-filter 每帧重算一遍 */
+         backdrop-filter 每帧重算一遍
+
+     ⚠️ 参数是两次实测才定下来的，别再往下调了。
+     第一版按"半径 0.5~1.5px / 透明度 0.08~0.25 / 封顶 34 个"实现，结果**肉眼完全
+     看不见**：有效 alpha 是三层相乘（基础 a × 呼吸 0.72~1.0 × 边缘 fade），典型值
+     只剩 0.12；再叠上小半径圆的抗锯齿摊薄，合成到浅色底上峰值像素差只有 10/255。
+     第二版调到 0.22~0.50 / 封顶 56 个，峰值 33/255 —— 单看数字够了，但整屏看还是
+     "几乎没有"：正文列 1000px 全被不透明卡片盖住，粒子只露在左右各 ~218px 的留白里，
+     那个区域当时只有十几颗。所以最终又按"数量 + 尺寸 + 不透明度一起推"到当前值，
+     实测峰值浅色 62/255、深色 70/255，覆盖面积仍 < 1%（不是满屏星空）。
+
+     判断"粒子到底可不可见"不能只看 canvas 的 getImageData（那只能证明"画上去了"，
+     证明不了"看得见"）。要拿「隐藏画布 / 显示画布」两张同视口截图在**纯背景区域**
+     逐像素比：峰值差 ≥ 30/255 才算看得见，覆盖率控制在 1% 左右。
+     纯背景区（避开文字）很重要 —— 文字抗锯齿自身就有 40+ 的噪声，会把粒子信号淹掉。
+     用 `_tcr_verify/fx_particles.py` 直接跑这套测量。 */
 
   var THEME_GRAY = { light: "150,162,180", dark: "150,166,192" };
 
@@ -503,7 +518,7 @@
     var W = 0, H = 0;
     var parts = [];
     var palette = [];
-    var LINK = 112;
+    var LINK = 140;
     var raf = 0, last = 0, resizeT = 0;
     var css = window.getComputedStyle(document.documentElement);
 
@@ -528,8 +543,8 @@
         y: Math.random() * H,
         vx: Math.cos(ang) * sp,
         vy: Math.sin(ang) * sp,
-        r: 0.5 + Math.random() * 1.0,
-        a: 0.08 + Math.random() * 0.17,
+        r: 1.2 + Math.random() * 1.6,
+        a: 0.34 + Math.random() * 0.34,
         ph: Math.random() * Math.PI * 2,
         c: palette[i % palette.length]
       };
@@ -544,7 +559,7 @@
       cv.style.height = H + "px";
       ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-      var n = Math.min(34, Math.max(14, Math.round(W * H / 46000)));
+      var n = Math.min(110, Math.max(34, Math.round(W * H / 13000)));
       if (parts.length > n) parts.length = n;
       while (parts.length < n) parts.push(spawn(parts.length));
     }
@@ -568,8 +583,8 @@
           d2 = dx * dx + dy * dy;
           if (d2 > LINK * LINK) continue;
           d = Math.sqrt(d2) || 1;
-          alpha = (1 - d / LINK) * 0.075;
-          if (alpha < 0.03) continue;
+          alpha = (1 - d / LINK) * 0.14;
+          if (alpha < 0.04) continue;
           ctx.strokeStyle = "rgba(" + p.c + "," + alpha.toFixed(3) + ")";
           ctx.beginPath();
           ctx.moveTo(p.x, p.y);
@@ -589,8 +604,8 @@
 
         var edge = Math.min(p.x, W - p.x, p.y, H - p.y);
         if (edge <= 0) continue;
-        var fade = edge < 70 ? edge / 70 : 1;
-        alpha = p.a * fade * (0.72 + 0.28 * Math.sin(p.ph));
+        var fade = edge < 90 ? edge / 90 : 1;
+        alpha = p.a * fade * (0.80 + 0.20 * Math.sin(p.ph));
         if (alpha <= 0.005) continue;
 
         ctx.fillStyle = "rgba(" + p.c + "," + alpha.toFixed(3) + ")";
