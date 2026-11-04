@@ -68,6 +68,8 @@
   --dt-rgb:59,130,246;
   --fs:#e85d04;
   --fs-rgb:232,93,4;
+  --bk:#7c5cf0;
+  --bk-rgb:124,92,240;
   --ok:#157347;
   --ok-rgb:21,115,71;
   --warn:#9a6700;
@@ -159,6 +161,8 @@
   --dt-rgb:59,130,246;
   --fs:#f0883e;
   --fs-rgb:240,136,62;
+  --bk:#a68bff;
+  --bk-rgb:166,139,255;
   --ok:#3fb950;
   --ok-rgb:63,185,80;
   --warn:#d29922;
@@ -421,6 +425,7 @@ h2 .h2-note{font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--di
 .stripe::before{content:'';position:absolute;inset:0 auto 0 0;width:3px;border-radius:3px 0 0 3px}
 .stripe.dt::before{background:var(--dt)}
 .stripe.fs::before{background:var(--fs)}
+.stripe.bk::before{background:var(--bk)}
 .stripe.both::before{background:linear-gradient(180deg,var(--dt) 50%,var(--fs) 50%)}
 .stripe.off{opacity:.45}
 
@@ -429,6 +434,7 @@ h2 .h2-note{font-size:11.5px;letter-spacing:0;text-transform:none;color:var(--di
 .tag{display:inline-block;font-size:11.5px;padding:2.5px 8px;border-radius:7px;font-weight:600;white-space:nowrap;letter-spacing:.01em}
 .tag.dt{color:var(--blue-ink);background:rgba(var(--dt-rgb),.16)}
 .tag.fs{color:var(--accent-ink);background:rgba(var(--accent-rgb),.16)}
+.tag.bk{color:var(--bk);background:rgba(var(--bk-rgb),.16)}
 
 .pill{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:500;
   border:1px solid var(--line);color:var(--dim2);flex:none;white-space:nowrap}
@@ -933,6 +939,7 @@ body.ab-show .px-top{bottom:96px}
 }
 .tl-pin.dt{background:var(--dt)}
 .tl-pin.fs{background:var(--fs)}
+.tl-pin.bk{background:var(--bk)}
 .tl-pin.both{background:linear-gradient(90deg,var(--dt),var(--fs))}
 .tl-pin.past{opacity:.42}
 .tl-pin.off{opacity:.28}

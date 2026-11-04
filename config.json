@@ -11,6 +11,7 @@
       "id": "dt-1705",
       "enabled": true,
       "channels": [
+        "bark",
         "dingtalk"
       ],
       "time": "17:05",
@@ -22,6 +23,7 @@
       "id": "fs-1715",
       "enabled": true,
       "channels": [
+        "bark",
         "feishu"
       ],
       "time": "17:15",
@@ -33,6 +35,7 @@
       "id": "dt-1720",
       "enabled": true,
       "channels": [
+        "bark",
         "dingtalk"
       ],
       "time": "17:20",
@@ -44,6 +47,7 @@
       "id": "fs-1730",
       "enabled": true,
       "channels": [
+        "bark",
         "feishu"
       ],
       "time": "17:30",
@@ -55,6 +59,7 @@
       "id": "dt-1740",
       "enabled": true,
       "channels": [
+        "bark",
         "dingtalk"
       ],
       "time": "17:40",
@@ -66,6 +71,7 @@
       "id": "fs-1800",
       "enabled": true,
       "channels": [
+        "bark",
         "feishu"
       ],
       "time": "18:00",
@@ -77,6 +83,7 @@
       "id": "rm-ert2h40",
       "enabled": true,
       "channels": [
+        "bark",
         "dingtalk"
       ],
       "time": "18:20",
@@ -95,6 +102,18 @@
       "enabled": true,
       "webhook_env": "FEISHU_WEBHOOK",
       "secret_env": "FEISHU_SECRET"
+    },
+    "bark": {
+      "enabled": true,
+      "key_env": "BARK_KEY",
+      "server_env": "BARK_SERVER",
+      "server": "https://api.day.app",
+      "open_shortcut": "xft 打卡",
+      "open_app": "",
+      "open_url": "",
+      "group": "打卡",
+      "level": "timeSensitive",
+      "is_archive": true
     }
   },
   "options": {

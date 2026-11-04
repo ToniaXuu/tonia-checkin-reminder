@@ -1,7 +1,50 @@
 {
-  "current": "1.7.1",
-  "updated": "2026-09-23",
+  "current": "1.8.0",
+  "updated": "2026-11-02",
   "releases": [
+    {
+      "version": "1.8.0",
+      "date": "2026-11-02",
+      "title": "接入 Bark：通知点一下直接唤起薪福通",
+      "changes": [
+        {
+          "type": "feat",
+          "text": "新增 Bark 推送通道，与钉钉 / 飞书并列，可逐条提醒勾选"
+        },
+        {
+          "type": "feat",
+          "text": "Bark 推送带 url 参数，点通知经快捷指令唤起薪福通；网页直连方案实测拿不到登录态，已在 README 记录原因"
+        },
+        {
+          "type": "feat",
+          "text": "跳转目标三级回落：open_url（完整地址）→ open_app（App scheme）→ open_shortcut（快捷指令名），支持 {rid} {time} {date} {label} 占位符"
+        },
+        {
+          "type": "feat",
+          "text": "设置页新增「Bark 点击通知后打开」，填快捷指令名或 scheme 都认 —— 带 :// 的当地址，否则当指令名自动百分号编码"
+        },
+        {
+          "type": "feat",
+          "text": "Bark 默认 level=timeSensitive（专注模式照样响）、isArchive（划掉也能找回）、group=打卡（同组折叠）"
+        },
+        {
+          "type": "fix",
+          "text": "修正设置页选项行在窄屏下被长说明撑破：说明文字块缺 min-width:0，190px 输入框会把卡片顶出屏幕；640px 以下改为说明独占一行、控件贴左铺满"
+        },
+        {
+          "type": "docs",
+          "text": "README 补 Bark 部署章节，含快捷指令桥接步骤与抓 IPA 拿 scheme 的方法"
+        },
+        {
+          "type": "feat",
+          "text": "七条提醒全部追加 Bark 通道，钉钉 / 飞书照旧发 —— 一天 14 条通知，Bark 那条点开就能打卡"
+        },
+        {
+          "type": "docs",
+          "text": "README 记录网页方案失败原因：H5 靠 JS bridge 注入 token，四个前端文件里没有任何 URL Scheme，Safari 里只有骨架屏"
+        }
+      ]
+    },
     {
       "version": "1.7.1",
       "date": "2026-09-23",

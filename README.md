@@ -1,6 +1,6 @@
 # tonia-checkin-reminder · 打卡提醒
 
-按你设定的多个时间点，通过 **钉钉 / 飞书** 推送打卡提醒。每条提醒有独立的时间、通道和文案，自动跳过周末与法定节假日。
+按你设定的多个时间点，通过 **钉钉 / 飞书 / Bark** 推送打卡提醒。每条提醒有独立的时间、通道和文案，自动跳过周末与法定节假日。Bark 那路点一下通知能直接唤起薪福通。
 
 **时间与文案都能在网页上改，改完立即生效。**
 
@@ -12,15 +12,15 @@
 
 | 提醒 ID | 时间 | 通道 | 文案 |
 |---------|------|------|------|
-| `dt-1705` | 17:05 | 钉钉 | 五点零五了，求你顺手把卡打了吧。 |
-| `fs-1715` | 17:15 | 飞书 | 工作是不是有点过于认真了，怎么不打卡啊 |
-| `dt-1720` | 17:20 | 钉钉 | 提醒一下，还没打卡的话现在就去。 |
-| `fs-1730` | 17:30 | 飞书 | 再提醒一次，记得打卡，都加班半小时了 |
-| `dt-1740` | 17:40 | 钉钉 | 再不打卡，今晚我喵一晚上 |
-| `fs-1800` | 18:00 | 飞书 | 六点了，Bro不会还没打卡吧，工资还想要吗 |
-| `rm-ert2h40` | 18:20 | 钉钉 | 啥波一，是不是已经在下班路上了 |
+| `dt-1705` | 17:05 | 钉钉 + Bark | 五点零五了，求你顺手把卡打了吧。 |
+| `fs-1715` | 17:15 | 飞书 + Bark | 工作是不是有点过于认真了，怎么不打卡啊 |
+| `dt-1720` | 17:20 | 钉钉 + Bark | 提醒一下，还没打卡的话现在就去。 |
+| `fs-1730` | 17:30 | 飞书 + Bark | 再提醒一次，记得打卡，都加班半小时了 |
+| `dt-1740` | 17:40 | 钉钉 + Bark | 再不打卡，今晚我喵一晚上 |
+| `fs-1800` | 18:00 | 飞书 + Bark | 六点了，Bro不会还没打卡吧，工资还想要吗 |
+| `rm-ert2h40` | 18:20 | 钉钉 + Bark | 啥波一，是不是已经在下班路上了 |
 
-钉钉 4 条、飞书 3 条，四个通道 Secret（`DINGTALK_WEBHOOK` / `DINGTALK_SECRET` / `FEISHU_WEBHOOK` / `FEISHU_SECRET`）已配好并端到端实测通过。
+钉钉 4 条、飞书 3 条，**每条都同时走 Bark**（17:05~18:20 一共 14 条通知）。五个 Secret（`DINGTALK_WEBHOOK` / `DINGTALK_SECRET` / `FEISHU_WEBHOOK` / `FEISHU_SECRET` / `BARK_KEY`）已配好，Bark 已本地端到端实测通过。
 
 > 页面：看板 `index.html` · 设置 `settings.html` · 更新日志 `changelog.html`
 
@@ -155,8 +155,48 @@ GitHub Actions
 | `DINGTALK_SECRET` | 必填（加签模式） |
 | `FEISHU_WEBHOOK` | 接入飞书时填 |
 | `FEISHU_SECRET` | 接入飞书时填 |
+| `BARK_KEY` | 接入 Bark 时填（Bark App 首页那串 device key） |
+| `BARK_SERVER` | 仅自建服务端时填，默认 `https://api.day.app` |
 
-### 3. cron-job.org
+### 3. Bark：让通知点一下就打开薪福通
+
+Bark 的 `url` 参数决定「点通知之后干什么」。**结论是走快捷指令，因为网页方案实测走不通。**
+
+1. iPhone「快捷指令」→ 新建 → 动作「打开 App」→ 选**薪福通** → 命名为 `xft 打卡`
+2. `config.json` → `channels.bark.open_shortcut` 填 `打卡`（或设置页「Bark 点击通知后打开」填名字）
+3. 测试：`BARK_KEY=xxx python scripts/send_reminder.py --id dt-1705 --force`
+
+链路是 `通知 → 快捷指令 → 薪福通`，中间会闪一下快捷指令的执行提示。**局限：只能到 App 首页，到不了打卡页。**
+
+#### 网页方案为什么不行（别再试了）
+
+薪福通确实有公开的打卡页路由：
+
+```
+https://xft.cmbchina.com/m-clk/#/clock-in
+```
+
+Safari 里能打开，打卡 UI（上班 / 下班 / 打卡按钮 / 定位中）全都渲染出来 —— **但登录态拿不到**，头像区是骨架屏，底部提示「重新登录」，点打卡必然失败。
+
+原因扒过代码，不是猜的：我下载了 `cmf-bridge.umd.js`、`xftNativeApi.js`、`mobile-extras.js`、`xftVc.min.js` 四个文件，**里面一个自定义 URL Scheme 都没有**。这套 H5 是设计给 App 内部 WebView 跑的，靠 `window.xftNativeApi` 这类 JS bridge 注入 token，根本不认浏览器的 cookie，也不通过 scheme 互相跳转。
+
+那条 `#/shortcut-middle-page` 也不是登录中转页，而是**「添加到桌面」的引导页**（教你点底部分享 → 添加到主屏幕）。它只在 standalone 的 WebClip 环境下才跳过教程跳到 `intentUrl`，从 Bark 打开的普通 Safari 里就停在教程页上 —— 这两件事分别试过，都撞墙。
+
+> 附带一个知识点：桌面书签看不到地址栏，URL 要去 Safari 历史记录里翻（书签只能由 Safari「添加到主屏幕」生成，那个页面必定在历史里）。
+
+#### 真想直达打卡页
+
+只剩抓 App 的真 scheme：Mac 上 Apple Configurator 2 或 iMazing 导出 `.ipa`，解压看 `Payload/*.app/Info.plist` 的 `CFBundleURLSchemes`，拿到后填 `open_app`。注意两点：iOS 对未注册的 scheme 是**静默失败**，填错不报错只是点了没反应；而且即使拿到 scheme，App 内部的打卡页路由也未必对外暴露，可能还是只能到首页。
+
+#### 三个通知参数
+
+- `level: timeSensitive` —— 专注模式也响。打卡提醒漏了就没意义，值得
+- `isArchive: true` —— 通知进 Bark 历史，划掉也能找回来
+- `group: 打卡` —— 同组通知折叠成一组，不和别的推送混在一起
+
+`open_url` / `open_app` / `open_shortcut` 三者按优先级取第一个非空值，所以也可以给单条提醒写 `open_url` 做例外（比如跳到看板某一条）。
+
+### 4. cron-job.org
 
 > 需要逐步操作 + 错误对照表？见 [`docs/cron-job-setup.md`](docs/cron-job-setup.md)。
 
@@ -178,7 +218,7 @@ GitHub Actions
 
 一条任务管所有提醒 —— 脚本自己判断该发哪条。
 
-### 4. GitHub Pages
+### 5. GitHub Pages
 
 Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与设置页。
 
@@ -186,7 +226,7 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 
 ## 版本与更新日志
 
-当前版本 **v1.7.1**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
+当前版本 **v1.8.0**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
 
 **约定：每次改动都要追加一条更新日志。** 编辑 `data/changelog.json`，在 `releases` 数组**开头**插入一条新记录，并把顶层的 `current` 改成新版本号：
 

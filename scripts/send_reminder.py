@@ -21,6 +21,7 @@ tonia-checkin-reminder — 打卡提醒推送（支持多条提醒 · 多通道�
 环境变量:
     DINGTALK_WEBHOOK / DINGTALK_SECRET
     FEISHU_WEBHOOK   / FEISHU_SECRET
+    BARK_KEY         / BARK_SERVER（自建服务端才需要，默认 https://api.day.app）
 """
 
 import argparse
@@ -175,6 +176,81 @@ def send_feishu(webhook, secret, card, dry=False):
     return False
 
 
+# ────────────────────────── 通道：Bark ──────────────────────────
+
+def resolve_open_url(rem, cc, ctx):
+    """
+    决定「点通知之后打开什么」。按优先级取第一个非空项：
+
+      rem.open_url     → 提醒级覆盖（比如某条提醒直接跳看板）
+      cc.open_url      → 完整地址，原样使用（http/https/任意 scheme）
+      cc.open_app      → App 的 URL Scheme，如 xft://
+      cc.open_shortcut → 快捷指令名称，拼成 shortcuts://run-shortcut?name=...
+
+    前三级原样保留，第四级自动百分号编码 —— 中文指令名手写编码极易出错。
+    支持占位符 {rid} {time} {date} {label}，方便把提醒信息带进落地页。
+    """
+    url = (rem.get("open_url") or "").strip()
+    if not url:
+        url = (cc.get("open_url") or "").strip()
+    if not url:
+        url = (cc.get("open_app") or "").strip()
+    if not url:
+        name = (cc.get("open_shortcut") or "").strip()
+        if name:
+            url = "shortcuts://run-shortcut?name=" + urllib.parse.quote(name)
+
+    if not url:
+        return ""
+
+    # 占位符替换放在编码之后做：值本身多为 ASCII（时间/ID），
+    # 中文的 label 若真被用上，作为 URL 路径的一部分也能被 iOS 正确打开。
+    return (url.replace("{rid}", str(rem.get("id") or ""))
+               .replace("{time}", ctx.get("time", ""))
+               .replace("{date}", ctx.get("date_cn", ""))
+               .replace("{label}", ctx.get("label", "")))
+
+
+def build_bark(c, rem, cc):
+    """Bark 用纯文本通知：标题一行、正文两三行，点一下直接跳。"""
+    title = f"{c['emoji']} {c['label']}提醒"
+
+    lines = []
+    if c["main"]:
+        lines.append(c["main"])
+
+    tail = f"{c['date_cn']} · {c['time']}"
+    if c["weather_line"]:
+        tail += f"\n{c['city']} {c['weather_line']}"
+    if c["stats_line"]:
+        tail += f"\n{c['stats_line']}"
+    lines.append(tail)
+
+    return title, "\n\n".join(lines), resolve_open_url(rem, cc, c)
+
+
+def send_bark(server, key, payload, dry=False):
+    if dry:
+        print("     🧪 [Bark] dry-run，未实际发送")
+        return True
+    url = server.rstrip("/") + "/push"
+    data = dict(payload)
+    data["device_key"] = key
+    try:
+        r = requests.post(url, json=data, timeout=15)
+        try:
+            j = r.json()
+        except Exception:
+            j = {}
+        if r.status_code == 200 and j.get("code") == 200:
+            print("     ✅ Bark 推送成功")
+            return True
+        print(f"     ❌ Bark 推送失败：{j.get('message') or r.text[:200]}")
+    except Exception as e:
+        print(f"     ❌ Bark 推送异常：{e}")
+    return False
+
+
 # ────────────────────────── 消息组装 ──────────────────────────
 
 def build_context(cfg, rem, now):
@@ -284,6 +360,40 @@ def dispatch(cfg, rem, ctx, dry=False):
         cc = ch_cfg.get(name) or {}
         if not cc.get("enabled", True):
             print(f"     ⏭️ 通道 {name} 已在配置中关闭")
+            continue
+
+        # Bark 靠 device key 而不是 webhook，单独取凭据
+        if name == "bark":
+            key = os.environ.get(cc.get("key_env", "BARK_KEY"), "") or cc.get("key", "")
+            if not key:
+                print(f"     ⚠️ 未配置环境变量 {cc.get('key_env', 'BARK_KEY')}，跳过 bark")
+                continue
+            server = (os.environ.get(cc.get("server_env", "BARK_SERVER"), "")
+                      or cc.get("server") or "https://api.day.app")
+            title, body, open_url = build_bark(ctx, rem, cc)
+            print(f"     📤 [Bark] {title}")
+            if open_url:
+                print(f"        点击跳转 → {open_url}")
+            else:
+                print("        点击跳转 → （未配置，点通知只会打开 Bark）")
+            if dry:
+                for line in body.splitlines():
+                    print("        " + line)
+            payload = {
+                "title": title,
+                "body": body,
+                "group": cc.get("group") or "打卡",
+                "level": cc.get("level") or "timeSensitive",
+                "isArchive": 1 if cc.get("is_archive", True) else 0,
+            }
+            if open_url:
+                payload["url"] = open_url
+            if cc.get("icon"):
+                payload["icon"] = cc["icon"]
+            if cc.get("sound"):
+                payload["sound"] = cc["sound"]
+            if send_bark(server, key, payload, dry=dry) and not dry:
+                sent.append("bark")
             continue
 
         wh = os.environ.get(cc.get("webhook_env", ""), "")

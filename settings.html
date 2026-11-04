@@ -107,6 +107,7 @@
   .chip:hover:not(:disabled){border-color:var(--line2);color:var(--txt)}
   .chip.on[data-ch=dingtalk]{background:rgba(var(--dt-rgb),.16);border-color:var(--dt);color:var(--blue-ink)}
   .chip.on[data-ch=feishu]{background:rgba(var(--fs-rgb),.16);border-color:var(--fs);color:var(--accent-ink)}
+  .chip.on[data-ch=bark]{background:rgba(var(--bk-rgb),.16);border-color:var(--bk);color:var(--bk)}
   .chip:disabled{opacity:.4;cursor:not-allowed}
 
   .icon-btn{
@@ -168,14 +169,24 @@
   .warn-box code{background:var(--code-bg);padding:1.5px 6px;border-radius:4px;font-family:var(--mono);font-size:12px;color:var(--txt)}
 
   .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  /* 文字块必须可收缩，否则长说明会把右侧控件顶出卡片（Bark 那行说明最长，最先暴露） */
+  .opt > div:first-child{flex:1 1 auto;min-width:0}
   .opt:last-child{border-bottom:none;padding-bottom:0}
   .opt:first-child{padding-top:0}
   .opt-text{font-size:13.5px}
   .opt-desc{font-size:12px;color:var(--dim2);margin-top:3px}
+  /* 网址这类长值独占一行：挤在 190px 里既看不清也没法核对，最后一行允许破例 */
+  .opt-wide{flex-wrap:wrap}
+  .opt-wide > div:first-child{flex:1 1 100%}
+  .opt-wide > input{width:100%!important;margin-top:8px;font-family:var(--mono);font-size:12px}
 
   @media(max-width:640px){
     .rem-actions{margin-left:0;width:100%;justify-content:flex-end}
     .rem-idx{margin-top:0}
+    /* 窄屏改成上下排：说明独占一行，控件贴左铺满，避免 190px 输入框把卡片撑破 */
+    .opt{flex-wrap:wrap;align-items:flex-start}
+    .opt > div:first-child{flex:1 1 100%}
+    .opt > input{width:100%!important;margin-top:8px}
   }
 </style>
 </head>
@@ -304,6 +315,13 @@
       </div>
       <input type="number" id="opt-tolerance" min="1" max="60" value="10" style="width:80px;text-align:center" disabled>
     </div>
+    <div class="opt opt-wide">
+      <div>
+        <div class="opt-text">Bark 点击通知后打开</div>
+        <div class="opt-desc">填打卡页网址（推荐，如薪福通的中转页）、App 的 URL Scheme，或快捷指令名；留空则点通知只打开 Bark</div>
+      </div>
+      <input type="text" id="opt-bark-open" placeholder="https://xft.cmbchina.com/m-zsxft/#/shortcut-middle-page?…" disabled>
+    </div>
   </div>
 
 </div>
@@ -354,7 +372,7 @@ const CITY_PRESETS = [
 
 const STORE_KEY = "tonia-checkin-conn";
 const API = "https://api.github.com";
-const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书"};
+const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书", bark: "Bark"};
 const TP_PRESETS = ["08:45", "09:00", "12:00", "17:00", "17:30", "18:00"];
 
 let remoteSha = null;
@@ -367,7 +385,7 @@ const pad = n => String(n).padStart(2, "0");
 const esc = s => String(s == null ? "" : s)
   .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-const GLOBAL_FIELDS = ["city-select","city-lat","city-lon","opt-holidays","opt-weather","opt-month","opt-quote","opt-tolerance"];
+const GLOBAL_FIELDS = ["city-select","city-lat","city-lon","opt-holidays","opt-weather","opt-month","opt-quote","opt-tolerance","opt-bark-open"];
 
 /* 轮询粒度 5 分钟 —— 提示用户这个时间点实际会在什么时候发出 */
 function snapInfo(t){
@@ -677,7 +695,8 @@ const CLOCK_SVG = '<svg class="tp-ico" viewBox="0 0 16 16" fill="none" aria-hidd
 
 function remCard(r, i){
   const chs = r.channels || ["dingtalk"];
-  const cls = chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt");
+  const only = chs.length === 1 ? chs[0] : "";
+  const cls = chs.length > 1 ? "both" : (only === "feishu" ? "fs" : only === "bark" ? "bk" : "dt");
   const off = r.enabled === false ? " off" : "";
   const dis = connected ? "" : "disabled";
   const chip = k => `<button type="button" class="chip${chs.includes(k) ? " on" : ""}" data-ch="${k}" data-act="ch" ${dis}>${CH_LABEL[k]}</button>`;
@@ -697,7 +716,7 @@ function remCard(r, i){
       </div>
       <div>
         <label class="lbl" style="margin-bottom:0">推送通道</label>
-        <div class="chips">${chip("dingtalk")}${chip("feishu")}</div>
+        <div class="chips">${chip("dingtalk")}${chip("feishu")}${chip("bark")}</div>
       </div>
       <div class="rem-actions">
         <button type="button" class="btn sm" data-act="test" ${dis}>测试</button>
@@ -854,6 +873,9 @@ function fillGlobals(cfg){
   $("opt-quote").checked    = o.include_quote === true;
   $("opt-tolerance").value  = o.tolerance_minutes || 10;
 
+  const bk = (cfg.channels && cfg.channels.bark) || {};
+  $("opt-bark-open").value = bk.open_url || bk.open_app || bk.open_shortcut || "";
+
   const sel = $("city-select");
   if(CITY_PRESETS.some(([n]) => n === city.name)){
     sel.value = city.name;
@@ -899,6 +921,25 @@ function buildConfig(silent){
     include_month_stats: $("opt-month").checked,
     include_quote: $("opt-quote").checked,
     tolerance_minutes: parseInt($("opt-tolerance").value, 10) || 10
+  });
+
+  /* Bark 的「点击打开」：填了带 scheme:// 的就当完整地址，否则当快捷指令名。
+     空值代表不跳转，点通知只会打开 Bark 自己。 */
+  const bo = $("opt-bark-open").value.trim();
+  const isScheme = /^[a-z][a-z0-9+.\-]*:/i.test(bo);
+  base.channels = base.channels || {};
+  const barkPrev = base.channels.bark || {};
+  base.channels.bark = Object.assign({}, barkPrev, {
+    enabled: barkPrev.enabled !== false,
+    key_env: barkPrev.key_env || "BARK_KEY",
+    server_env: barkPrev.server_env || "BARK_SERVER",
+    server: barkPrev.server || "https://api.day.app",
+    group: barkPrev.group || "打卡",
+    level: barkPrev.level || "timeSensitive",
+    is_archive: barkPrev.is_archive !== false,
+    open_url: isScheme ? bo : "",
+    open_app: "",
+    open_shortcut: isScheme ? "" : bo
   });
 
   delete base.schedule;

@@ -14,6 +14,7 @@ Thumbs.db
 PAT.txt
 *.pat
 *.token
+.barkkey
 __shot_*.html
 __n_*.html
 __probe_*.html

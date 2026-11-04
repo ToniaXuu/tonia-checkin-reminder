@@ -398,7 +398,7 @@
       <div class="step-n">06</div>
       <div class="step-b">
         <div class="step-t">通道分发 → 日志回写</div>
-        <div class="step-d">按每条提醒自己的 <code>channels</code> 发往钉钉 / 飞书，成功后把记录写回 <code>data/reminder_log.json</code>，Actions 自动提交。</div>
+        <div class="step-d">按每条提醒自己的 <code>channels</code> 发往钉钉 / 飞书 / Bark，成功后把记录写回 <code>data/reminder_log.json</code>，Actions 自动提交。</div>
       </div>
     </div>
   </div>
@@ -422,7 +422,9 @@
 </div>
 
 <script>
-const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书"};
+const CH_LABEL = {dingtalk: "钉钉", feishu: "飞书", bark: "Bark"};
+const CH_CLS   = {dingtalk: "dt", feishu: "fs", bark: "bk"};
+const chCls = c => CH_CLS[c] || "dt";
 
 const FALLBACK = {
   reminders: [
@@ -475,20 +477,23 @@ function renderReminders(){
 
   const dt = list.filter(r => (r.channels || []).includes("dingtalk")).length;
   const fs = list.filter(r => (r.channels || []).includes("feishu")).length;
+  const bk = list.filter(r => (r.channels || []).includes("bark")).length;
   const on = list.filter(r => r.enabled !== false).length;
+  const chSummary = [`钉钉 ${dt}`, `飞书 ${fs}`];
+  if(bk) chSummary.push(`Bark ${bk}`);
   document.getElementById("sub-line").textContent =
-    `已配置 ${on} 条生效提醒 · 钉钉 ${dt} · 飞书 ${fs} · 自动跳过节假日与调休`;
-  document.getElementById("ch-txt").textContent = `钉钉 ${dt} · 飞书 ${fs}`;
+    `已配置 ${on} 条生效提醒 · ${chSummary.join(" · ")} · 自动跳过节假日与调休`;
+  document.getElementById("ch-txt").textContent = chSummary.join(" · ");
   document.getElementById("rem-note").textContent = `共 ${list.length} 条`;
 
   const nx = nextOf(list, new Date());
 
   box.innerHTML = list.map(r => {
     const chs = r.channels || ["dingtalk"];
-    const cls = chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt");
+    const cls = chs.length > 1 ? "both" : chCls(chs[0]);
     const off = r.enabled === false ? " off" : "";
     const tags = chs.map(c =>
-      `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join("");
+      `<span class="tag ${chCls(c)}">${CH_LABEL[c] || c}</span>`).join("");
     const msg = (r.message || "").trim() || "<span style='color:var(--dim2)'>（无自定义文案）</span>";
     const isNext = (nx && nx.r === r && r.enabled !== false) ? " is-next" : "";
     const nextTag = isNext ? '<span class="tag next-tag">下一条</span>' : "";
@@ -536,7 +541,7 @@ function renderTimeline(){
       pos: m / 1440 * 100,
       // chs 只当 CSS 类名用（tl-pin dt / fs / both），标签另算 ——
       // CH_LABEL 的键是原始通道名，拿缩写码去查会得到 undefined（曾据此打出「17:15 · undefined」）
-      chs: chs.length > 1 ? "both" : (chs[0] === "feishu" ? "fs" : "dt"),
+      chs: chs.length > 1 ? "both" : chCls(chs[0]),
       chLabel: chs.map(c => CH_LABEL[c] || c).join("+") || "钉钉",
       on: r.enabled !== false
     };
@@ -677,7 +682,7 @@ function renderLog(){
 
   body.innerHTML = hist.slice(0, 14).map(h => {
     const chs = (h.channels || []).map(c =>
-      `<span class="tag ${c === "feishu" ? "fs" : "dt"}">${CH_LABEL[c] || c}</span>`).join(" ") || "—";
+      `<span class="tag ${chCls(c)}">${CH_LABEL[c] || c}</span>`).join(" ") || "—";
     const ago = (window.PFX && PFX.timeAgo) ? PFX.timeAgo(h.ts) : "";
     return `<tr class="fade-up">
       <td class="mono">${esc(h.date || "—")}${ago ? `<span class="ago">${esc(ago)}</span>` : ""}</td>
