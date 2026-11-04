@@ -464,10 +464,10 @@ async function loadJSON(path){
 const DATA_BASE = "https://raw.githubusercontent.com/ToniaXuu/tonia-checkin-reminder/data/";
 
 async function loadLog(){
-  // 远端日志加 4 秒超时：data 分支还没建、或网络不好时，别把整页卡在等它上
+  // 远端日志加 6 秒超时：data 分支还没建、或网络不好时，别把整页卡在等它上
   try{
     const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 4000);
+    const timer = setTimeout(() => ac.abort(), 6000);
     const r = await fetch(DATA_BASE + "reminder_log.json?t=" + Date.now(),
                           {cache:"no-store", signal: ac.signal});
     clearTimeout(timer);
