@@ -226,7 +226,7 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 
 ## 版本与更新日志
 
-当前版本 **v1.8.0**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
+当前版本 **v1.9.0**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
 
 **约定：每次改动都要追加一条更新日志。** 编辑 `data/changelog.json`，在 `releases` 数组**开头**插入一条新记录，并把顶层的 `current` 改成新版本号：
 
@@ -251,6 +251,21 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 
 ---
 
+## 数据分支
+
+推送记录每天都在变，如果跟着源码提交到 `main`，提交历史会被 `log: 记录打卡提醒推送` 淹掉 —— 实测 30 天堆了 169 个这种提交，真正的功能改动全被埋了。
+
+所以运行日志单独放 `data` 分支：
+
+```
+main   ← 源码、config.json、changelog.json、节假日缓存
+data   ← 只有一个提交，内容是 data/reminder_log.json 的最新快照
+```
+
+工作流用「孤儿提交 + 强推」维护它，所以 `data` 分支永远只有一个提交，不产生历史噪音。看板通过 `raw.githubusercontent.com/.../data/reminder_log.json` 读取，取不到时退回本地同目录文件（本地预览不会被这个改动卡住）。
+
+> 节假日缓存（`data/holiday_*.json`）**留在 main**：它是给脚本复用的缓存，一年变一两次，跟着源码走才对。
+
 ## 目录结构
 
 | 文件 | 说明 |
@@ -267,7 +282,7 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 | `scripts/workday.py` | 工作日判断（含年度节假日缓存） |
 | `scripts/quotes.json` | 随机文案库（仅在文案留空且开启选项时使用） |
 | `.github/workflows/checkin-reminder.yml` | Actions 工作流 |
-| `data/reminder_log.json` | 推送记录（兼作去重凭据） |
+| `data/reminder_log.json` | 推送记录（兼作去重凭据）；**运行时会推到 `data` 分支，main 上不追踪** |
 | `data/holiday_<年>.json` | 节假日表缓存（自动生成） |
 
 ---

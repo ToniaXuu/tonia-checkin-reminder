@@ -46,6 +46,21 @@ jobs:
           echo "───── 当前 config.json ─────"
           cat config.json
 
+      - name: 拉取推送记录（当日去重依据）
+        run: |
+          # 日志平时只存在 data 分支，main 上是空的。
+          # 不先取回来，append_log 会从零开始，去重失效、同一条当天可能重复推送。
+          mkdir -p data
+          if git fetch origin data:refs/remotes/origin/data --depth=1 2>/dev/null; then
+            if git show origin/data:data/reminder_log.json > data/reminder_log.json 2>/dev/null; then
+              echo "✅ 已从 data 分支恢复 $(python3 -c "import json;print(len(json.load(open('data/reminder_log.json'))['history']))" 2>/dev/null || echo '?') 条历史记录"
+            else
+              echo "⚠️ data 分支存在但没有日志文件，按空日志处理"
+            fi
+          else
+            echo "⏭️ 还没有 data 分支（首次运行），按空日志处理"
+          fi
+
       - name: 设置 Python
         uses: actions/setup-python@v6
         with:
@@ -71,13 +86,39 @@ jobs:
           echo "运行参数: $ARGS"
           python scripts/send_reminder.py $ARGS
 
-      - name: 提交提醒日志与节假日缓存
+      - name: 节假日缓存有更新则提交到 main
         run: |
-          if [[ -n $(git status --porcelain data/) ]]; then
-            git add -A data/
-            git commit -m "log: 记录打卡提醒推送 [skip ci]"
+          # 节假日是「参考数据」，一年变一两次，且下次运行要复用，所以留在 main
+          if [[ -n $(git status --porcelain data/holiday_*.json 2>/dev/null) ]]; then
+            git add data/holiday_*.json
+            git commit -m "data: 更新节假日缓存 [skip ci]"
             git push
-            echo "✅ 数据已提交"
+            echo "✅ 节假日缓存已提交"
           else
-            echo "⏭️ 数据无变化"
+            echo "⏭️ 节假日缓存无变化"
           fi
+
+      - name: 推送记录推到 data 分支（保持 main 干净）
+        run: |
+          set -e
+          # 运行日志天天变，放 main 会把提交历史淹掉（30 天 169 个 log 提交）
+          if [[ -z $(git status --porcelain data/reminder_log.json 2>/dev/null) ]]; then
+            echo "⏭️ 推送记录无变化"
+            exit 0
+          fi
+
+          tmp=$(mktemp -d)
+          cp data/reminder_log.json "$tmp"/
+
+          # data 分支只存「最新快照」：孤儿提交 + 强推，永远只有一个提交
+          git checkout --orphan data-snapshot
+          git rm -rf . --quiet || true
+          mkdir -p data
+          cp "$tmp/reminder_log.json" data/
+          git add -A
+
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "log: 记录打卡提醒推送 [skip ci]"
+          git push --force origin HEAD:data
+          echo "✅ 已更新 data 分支（看板会自动读取）"

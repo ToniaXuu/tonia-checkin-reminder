@@ -398,7 +398,7 @@
       <div class="step-n">06</div>
       <div class="step-b">
         <div class="step-t">通道分发 → 日志回写</div>
-        <div class="step-d">按每条提醒自己的 <code>channels</code> 发往钉钉 / 飞书 / Bark，成功后把记录写回 <code>data/reminder_log.json</code>，Actions 自动提交。</div>
+        <div class="step-d">按每条提醒自己的 <code>channels</code> 发往钉钉 / 飞书 / Bark，成功后把记录写回 <code>data/reminder_log.json</code>，再由 Actions 推到 <code>data</code> 分支。</div>
       </div>
     </div>
   </div>
@@ -457,6 +457,26 @@ async function loadJSON(path){
     if(!r.ok) throw new Error(r.status);
     return await r.json();
   }catch(e){ return null; }
+}
+
+/* 运行日志不跟源码混在一起 —— 它存在 data 分支，每次只有一个快照提交，
+   main 上的提交历史因此保持干净。分支还没建好时退回本地同目录文件。 */
+const DATA_BASE = "https://raw.githubusercontent.com/ToniaXuu/tonia-checkin-reminder/data/";
+
+async function loadLog(){
+  // 远端日志加 4 秒超时：data 分支还没建、或网络不好时，别把整页卡在等它上
+  try{
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 4000);
+    const r = await fetch(DATA_BASE + "reminder_log.json?t=" + Date.now(),
+                          {cache:"no-store", signal: ac.signal});
+    clearTimeout(timer);
+    if(r.ok){
+      const j = await r.json();
+      if(j && Array.isArray(j.history)) return j;
+    }
+  }catch(e){ /* 超时或 404 —— 走本地回退 */ }
+  return await loadJSON("data/reminder_log.json");
 }
 
 /* ══════════ 提醒列表 ══════════ */
@@ -698,7 +718,7 @@ function renderLog(){
 (async () => {
   const [cfgRaw, logRaw] = await Promise.all([
     loadJSON("config.json"),
-    loadJSON("data/reminder_log.json")
+    loadLog()
   ]);
   CFG = cfgRaw || FALLBACK;
   LOG = logRaw || { history: [] };
