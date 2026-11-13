@@ -155,15 +155,19 @@ GitHub Actions
 | `DINGTALK_SECRET` | 必填（加签模式） |
 | `FEISHU_WEBHOOK` | 接入飞书时填 |
 | `FEISHU_SECRET` | 接入飞书时填 |
-| `BARK_KEY` | 接入 Bark 时填（Bark App 首页那串 device key） |
+| `BARK_KEY` | 接入 Bark 时填（Bark App 首页那串 device key）。也叫 `BARK_DEVICE_KEY` 也行，workflow 里两者都认 |
 | `BARK_SERVER` | 仅自建服务端时填，默认 `https://api.day.app` |
 
 ### 3. Bark：让通知点一下就打开薪福通
 
 Bark 的 `url` 参数决定「点通知之后干什么」。**结论是走快捷指令，因为网页方案实测走不通。**
 
+> ⚠️ **Secret 的名字必须和 workflow 里引用的一致，差一个字就静默失效。**
+> GitHub 对不存在的 secret 不报错、只给空字符串，脚本于是打印一句「未配置环境变量 BARK_KEY，跳过 bark」就继续跑，job 状态仍然是 ✅ success。这个坑实际踩过：secret 建成了 `BARK_DEVICE_KEY`，workflow 读的是 `BARK_KEY`，于是钉钉飞书天天准时、Bark 一条都没有，而 Actions 页面一片绿。
+> 现在 workflow 写成 `secrets.BARK_KEY || secrets.BARK_DEVICE_KEY`，脚本也会按别名兜底并打印实际用的是哪个变量。**排查时直接看「发送打卡提醒」那一步的 `env:` 块——空值就说明名字不对。**
+
 1. iPhone「快捷指令」→ 新建 → 动作「打开 App」→ 选**薪福通** → 命名为 `xft 打卡`
-2. `config.json` → `channels.bark.open_shortcut` 填 `打卡`（或设置页「Bark 点击通知后打开」填名字）
+2. `config.json` → `channels.bark.open_shortcut` 填 `xft 打卡`（或设置页「Bark 点击通知后打开」填名字）
 3. 测试：`BARK_KEY=xxx python scripts/send_reminder.py --id dt-1705 --force`
 
 链路是 `通知 → 快捷指令 → 薪福通`，中间会闪一下快捷指令的执行提示。**局限：只能到 App 首页，到不了打卡页。**
@@ -226,7 +230,7 @@ Settings → Pages → Source 选 `main` 分支根目录，即可访问看板与
 
 ## 版本与更新日志
 
-当前版本 **v1.9.0**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
+当前版本 **v1.9.1**，完整历史见 [`changelog.html`](changelog.html)（数据源 `data/changelog.json`）。
 
 **约定：每次改动都要追加一条更新日志。** 编辑 `data/changelog.json`，在 `releases` 数组**开头**插入一条新记录，并把顶层的 `current` 改成新版本号：
 

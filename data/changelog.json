@@ -1,7 +1,30 @@
 {
-  "current": "1.9.0",
-  "updated": "2026-11-04",
+  "current": "1.9.1",
+  "updated": "2026-11-13",
   "releases": [
+    {
+      "version": "1.9.1",
+      "date": "2026-11-13",
+      "title": "修复 Bark 定时推送完全不生效：Secret 名字不匹配，静默失败",
+      "changes": [
+        {
+          "type": "fix",
+          "text": "根因是 secret 建成了 BARK_DEVICE_KEY、workflow 读的是 BARK_KEY —— GitHub 对不存在的 secret 不报错只给空字符串，脚本打印「未配置，跳过 bark」后照常 exit 0，Actions 一路绿灯但一条都不会发"
+        },
+        {
+          "type": "fix",
+          "text": "workflow 改为 secrets.BARK_KEY || secrets.BARK_DEVICE_KEY，两个名字都认"
+        },
+        {
+          "type": "fix",
+          "text": "脚本在 BARK_KEY 为空时按别名兜底（BARK_DEVICE_KEY / BARK_DEVICE），命中时打印实际使用的变量名"
+        },
+        {
+          "type": "docs",
+          "text": "README 补排查方法：看「发送打卡提醒」步骤的 env 块，BARK_KEY 为空即名字不对；顺带修正 open_shortcut 指令名为「xft 打卡」"
+        }
+      ]
+    },
     {
       "version": "1.9.0",
       "date": "2026-11-04",
