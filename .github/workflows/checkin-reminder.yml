@@ -75,7 +75,10 @@ jobs:
           DINGTALK_SECRET: ${{ secrets.DINGTALK_SECRET }}
           FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
           FEISHU_SECRET: ${{ secrets.FEISHU_SECRET }}
-          BARK_KEY: ${{ secrets.BARK_KEY }}
+          # secret 实际叫 BARK_DEVICE_KEY。|| 让两个名字都能用：
+          # 名字写错时 GitHub 不报错、只给空字符串，bark 会静默跳过，排查成本极高。
+          BARK_KEY: ${{ secrets.BARK_KEY || secrets.BARK_DEVICE_KEY }}
+          BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
           BARK_SERVER: ${{ secrets.BARK_SERVER }}
           REMINDER_ID: ${{ inputs.id }}
           FORCE_INPUT: ${{ inputs.force }}

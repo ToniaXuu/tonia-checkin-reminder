@@ -364,9 +364,21 @@ def dispatch(cfg, rem, ctx, dry=False):
 
         # Bark 靠 device key 而不是 webhook，单独取凭据
         if name == "bark":
-            key = os.environ.get(cc.get("key_env", "BARK_KEY"), "") or cc.get("key", "")
+            env_name = cc.get("key_env", "BARK_KEY")
+            key = os.environ.get(env_name, "") or cc.get("key", "")
             if not key:
-                print(f"     ⚠️ 未配置环境变量 {cc.get('key_env', 'BARK_KEY')}，跳过 bark")
+                # 兜底：secret 名字写错时 GitHub 不报错，只会给空字符串 —— 静默失效极难发现。
+                # 按常见别名依次尝试，命中就提示用的是哪个。
+                for alt in ("BARK_DEVICE_KEY", "BARK_KEY", "BARK_DEVICE"):
+                    if alt == env_name:
+                        continue
+                    v = os.environ.get(alt, "")
+                    if v:
+                        key = v
+                        print(f"     ℹ️ {env_name} 为空，改用环境变量 {alt}")
+                        break
+            if not key:
+                print(f"     ⚠️ 未配置环境变量 {env_name}，跳过 bark")
                 continue
             server = (os.environ.get(cc.get("server_env", "BARK_SERVER"), "")
                       or cc.get("server") or "https://api.day.app")
